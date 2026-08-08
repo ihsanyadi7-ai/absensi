@@ -19,9 +19,6 @@
     <!-- face-api.js untuk deteksi wajah -->
     <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <style>
-        /* ============================================================
-           STYLE UTAMA
-           ============================================================ */
         * {
             margin: 0;
             padding: 0;
@@ -42,7 +39,6 @@
             width: 100%;
         }
 
-        /* HEADER */
         .header {
             display: flex;
             flex-wrap: wrap;
@@ -149,7 +145,6 @@
             background: #138496;
         }
 
-        /* Tabs */
         .tabs {
             display: flex;
             gap: 8px;
@@ -189,7 +184,6 @@
             display: block;
         }
 
-        /* Statistik */
         .stats {
             display: flex;
             flex-wrap: wrap;
@@ -220,7 +214,6 @@
         .stats .card-stat.purple { border-left-color: #6f42c1; }
         .stats .card-stat.success { border-left-color: #1f9d5a; }
 
-        /* Kamera + Form */
         .camera-section {
             background: white;
             padding: 25px;
@@ -336,25 +329,28 @@
             justify-content: center;
             gap: 10px;
         }
-        .btn-absen:hover {
+        .btn-absen:hover:not(:disabled) {
             background: #13458a;
             transform: scale(1.01);
         }
         .btn-absen:disabled {
             opacity: 0.5;
             pointer-events: none;
+            cursor: not-allowed;
         }
 
-        /* Face Detection Result */
+        /* Face Result */
         .face-result {
             margin-top: 12px;
-            padding: 12px;
+            padding: 12px 16px;
             border-radius: 12px;
             display: none;
             border: 2px solid;
+            align-items: center;
+            gap: 12px;
         }
         .face-result.show {
-            display: block;
+            display: flex;
         }
         .face-result.match {
             background: #e8f5ed;
@@ -373,7 +369,10 @@
         }
         .face-result .face-icon {
             font-size: 1.5rem;
-            margin-right: 10px;
+            flex-shrink: 0;
+        }
+        .face-result .face-content {
+            flex: 1;
         }
         .face-result .face-text {
             font-weight: 600;
@@ -381,7 +380,7 @@
         }
         .face-result .face-detail {
             font-size: 0.85rem;
-            margin-top: 4px;
+            margin-top: 2px;
             opacity: 0.8;
         }
 
@@ -409,9 +408,7 @@
             word-break: break-all;
         }
 
-        /* ============================================================
-           PRINT BARCODE
-           ============================================================ */
+        /* Print Barcode */
         .print-barcode-section {
             background: white;
             padding: 20px 25px;
@@ -533,16 +530,9 @@
             color: #1f9d5a;
         }
 
-        /* ============================================================
-           STYLE UNTUK PRINT / CETAK
-           ============================================================ */
         @media print {
-            body * {
-                visibility: hidden;
-            }
-            .print-area, .print-area * {
-                visibility: visible;
-            }
+            body * { visibility: hidden; }
+            .print-area, .print-area * { visibility: visible; }
             .print-area {
                 position: absolute;
                 left: 0;
@@ -635,9 +625,6 @@
             }
         }
 
-        /* ============================================================
-           Tabel Riwayat
-           ============================================================ */
         .table-wrap {
             background: white;
             border-radius: 28px;
@@ -760,7 +747,6 @@
             font-size: 0.9rem;
         }
 
-        /* Checkbox styling */
         .checkbox-wrapper {
             display: flex;
             align-items: center;
@@ -773,7 +759,6 @@
             accent-color: #1a5fb0;
         }
 
-        /* Modal */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -820,7 +805,6 @@
             padding: 10px 28px;
         }
 
-        /* Notification Panel */
         .notification-panel {
             background: white;
             border-radius: 28px;
@@ -855,7 +839,7 @@
             background: #1f9d5a;
         }
         .notification-list {
-            max-height: 150px;
+            max-height: 200px;
             overflow-y: auto;
         }
         .notification-item {
@@ -863,7 +847,6 @@
             align-items: center;
             gap: 12px;
             padding: 10px 12px;
-            background: #fef9f0;
             border-radius: 12px;
             margin-bottom: 8px;
             border-left: 4px solid #e6a020;
@@ -872,11 +855,18 @@
             background: #fef0f0;
             border-left-color: #d14c4c;
         }
+        .notification-item.wajah-tidak-dikenal {
+            background: #fef0f0;
+            border-left-color: #d14c4c;
+        }
         .notification-item .notif-icon {
             color: #e6a020;
             font-size: 1.1rem;
         }
         .notification-item.lokasi-salah .notif-icon {
+            color: #d14c4c;
+        }
+        .notification-item.wajah-tidak-dikenal .notif-icon {
             color: #d14c4c;
         }
         .notification-item .notif-text {
@@ -891,18 +881,30 @@
             font-size: 0.75rem;
             color: #8195af;
         }
-        .notification-item .notif-action {
+        .notification-item .notif-actions {
+            display: flex;
+            gap: 4px;
+        }
+        .notification-item .notif-actions button {
             background: none;
             border: none;
-            color: #d14c4c;
             cursor: pointer;
-            font-size: 0.9rem;
             padding: 4px 8px;
             border-radius: 8px;
             transition: 0.2s;
+            font-size: 0.8rem;
         }
-        .notification-item .notif-action:hover {
+        .notification-item .notif-actions .notif-hapus {
+            color: #d14c4c;
+        }
+        .notification-item .notif-actions .notif-hapus:hover {
             background: #fee8e8;
+        }
+        .notification-item .notif-actions .notif-ignore {
+            color: #526b8a;
+        }
+        .notification-item .notif-actions .notif-ignore:hover {
+            background: #e9eff6;
         }
         .no-notification {
             text-align: center;
@@ -911,7 +913,6 @@
             font-size: 0.9rem;
         }
 
-        /* Location Settings */
         .location-settings {
             display: flex;
             flex-direction: column;
@@ -987,7 +988,6 @@
             display: inline-block;
         }
 
-        /* Database Siswa */
         .db-actions {
             display: flex;
             gap: 10px;
@@ -1005,7 +1005,6 @@
             padding: 10px 20px;
         }
 
-        /* File Upload */
         .upload-area {
             border: 2px dashed #d6e0ee;
             border-radius: 16px;
@@ -1040,7 +1039,6 @@
             display: none;
         }
 
-        /* Upload Foto Siswa */
         .foto-upload-area {
             border: 2px dashed #d6e0ee;
             border-radius: 12px;
@@ -1258,7 +1256,6 @@
             border: 4px solid white;
         }
 
-        /* Scan Mode Toggle */
         .scan-mode-toggle {
             display: flex;
             gap: 8px;
@@ -1308,35 +1305,6 @@
             color: #2a7de1;
         }
 
-        .face-detection-status {
-            margin-top: 8px;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            background: #f8fafc;
-            color: #526b8a;
-            border: 1px solid #e6edf6;
-            display: none;
-        }
-        .face-detection-status.show {
-            display: block;
-        }
-        .face-detection-status.loading {
-            background: #fff3cd;
-            border-color: #e6a020;
-            color: #856404;
-        }
-        .face-detection-status.success {
-            background: #e8f5ed;
-            border-color: #1f9d5a;
-            color: #0f6a3a;
-        }
-        .face-detection-status.error {
-            background: #fef0f0;
-            border-color: #d14c4c;
-            color: #9e2a2a;
-        }
-
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -1361,6 +1329,8 @@
             .siswa-item .actions { align-self: flex-end; }
             .scan-mode-toggle { flex-direction: column; }
             .location-info { font-size: 0.7rem; padding: 4px 8px; }
+            .face-result { flex-direction: column; text-align: center; }
+            .notification-item { flex-wrap: wrap; }
         }
     </style>
 </head>
@@ -1445,8 +1415,10 @@
                     <!-- Face Detection Result -->
                     <div class="face-result" id="faceResult">
                         <span class="face-icon" id="faceIcon"><i class="fas fa-user-check"></i></span>
-                        <span class="face-text" id="faceText">Wajah dikenali</span>
-                        <div class="face-detail" id="faceDetail">-</div>
+                        <div class="face-content">
+                            <div class="face-text" id="faceText">Wajah dikenali</div>
+                            <div class="face-detail" id="faceDetail">-</div>
+                        </div>
                     </div>
 
                     <button class="btn-absen" id="absenBtn">
@@ -1795,7 +1767,7 @@
 
 <script>
     // ==============================================================
-    // 1. ELEMEN & GLOBAL
+    // ELEMEN & GLOBAL
     // ==============================================================
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
@@ -1884,6 +1856,7 @@
     let currentLocationNameText = 'Mendeteksi...';
     let isFaceModelLoaded = false;
     let faceVerificationResult = null;
+    let isFaceVerifying = false;
 
     let locationSettings = {
         lat: null,
@@ -1893,7 +1866,7 @@
     };
 
     // ==============================================================
-    // 2. TABS
+    // TABS
     // ==============================================================
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -1913,7 +1886,7 @@
     });
 
     // ==============================================================
-    // 3. KAMERA ABSEN
+    // KAMERA ABSEN
     // ==============================================================
     async function startCamera() {
         try {
@@ -1944,7 +1917,10 @@
         photoStatus.textContent = 'Foto berhasil diambil ✅';
         photoStatus.style.color = '#1f9d5a';
         
-        // Lakukan verifikasi wajah setelah foto diambil
+        // Disable absen button dulu
+        absenBtn.disabled = true;
+        
+        // Lakukan verifikasi wajah
         verifyFace(capturedPhotoData);
     }
 
@@ -1955,13 +1931,15 @@
         photoStatus.textContent = 'Kamera dimuat ulang';
         photoStatus.style.color = '#4b6e92';
         faceResult.classList.remove('show', 'match', 'unmatch', 'loading');
+        absenBtn.disabled = false;
+        faceVerificationResult = null;
     }
 
     captureBtn.addEventListener('click', capturePhoto);
     refreshCamBtn.addEventListener('click', refreshCamera);
 
     // ==============================================================
-    // 4. FACE DETECTION & VERIFICATION
+    // FACE DETECTION & VERIFICATION
     // ==============================================================
     async function loadFaceModels() {
         try {
@@ -1981,14 +1959,18 @@
     }
 
     async function verifyFace(photoData) {
+        if (isFaceVerifying) return;
+        isFaceVerifying = true;
+        
         if (!isFaceModelLoaded) {
-            // Coba load models
             const loaded = await loadFaceModels();
             if (!loaded) {
                 faceResult.className = 'face-result show loading';
                 faceIcon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
                 faceText.textContent = 'Model wajah tidak tersedia';
                 faceDetail.textContent = 'Silakan refresh halaman atau periksa koneksi internet.';
+                isFaceVerifying = false;
+                absenBtn.disabled = false;
                 return;
             }
         }
@@ -1998,14 +1980,13 @@
         faceIcon.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
         faceText.textContent = 'Memverifikasi wajah...';
         faceDetail.textContent = 'Mohon tunggu sebentar.';
+        absenBtn.disabled = true;
 
         try {
-            // Buat image dari foto
             const img = new Image();
             img.src = photoData;
             await new Promise((resolve) => { img.onload = resolve; });
 
-            // Deteksi wajah di foto
             const detections = await faceapi.detectAllFaces(
                 img,
                 new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 })
@@ -2015,9 +1996,11 @@
                 // Tidak ada wajah terdeteksi
                 faceResult.className = 'face-result show unmatch';
                 faceIcon.innerHTML = '<i class="fas fa-user-slash"></i>';
-                faceText.textContent = 'Tidak ada wajah terdeteksi';
+                faceText.textContent = '❌ TIDAK ADA WAJAH TERDETEKSI';
                 faceDetail.textContent = 'Pastikan foto diambil dengan jelas dan wajah terlihat.';
                 faceVerificationResult = { match: false, siswa: null, reason: 'No face detected' };
+                absenBtn.disabled = true;
+                isFaceVerifying = false;
                 return;
             }
 
@@ -2025,12 +2008,13 @@
             const matchedStudent = await findMatchingFace(detections[0].descriptor);
 
             if (matchedStudent) {
-                // Wajah cocok dengan siswa di database
+                // Wajah cocok
                 faceResult.className = 'face-result show match';
                 faceIcon.innerHTML = '<i class="fas fa-user-check"></i>';
-                faceText.textContent = `✅ Wajah cocok: ${matchedStudent.nama}`;
+                faceText.textContent = `✅ WAJAH COCOK: ${matchedStudent.nama}`;
                 faceDetail.textContent = `Kelas: ${matchedStudent.kelas} | NIS: ${matchedStudent.nis || '-'}`;
                 faceVerificationResult = { match: true, siswa: matchedStudent };
+                absenBtn.disabled = false;
                 
                 // Auto isi nama
                 namaInput.value = matchedStudent.nama;
@@ -2042,15 +2026,52 @@
                     }
                 }
             } else {
-                // Wajah tidak cocok dengan siapapun di database
+                // Wajah tidak cocok
                 faceResult.className = 'face-result show unmatch';
                 faceIcon.innerHTML = '<i class="fas fa-user-slash"></i>';
                 faceText.textContent = '❌ ORANG TIDAK DIKENAL';
-                faceDetail.textContent = 'Wajah tidak terdaftar di database. Periksa apakah siswa sudah terdaftar.';
+                faceDetail.textContent = 'Wajah tidak terdaftar di database. Silakan daftarkan siswa terlebih dahulu.';
                 faceVerificationResult = { match: false, siswa: null, reason: 'Unknown person' };
+                absenBtn.disabled = true;
                 
                 // Tambahkan notifikasi
-                showNotification('Orang Tidak Dikenal', 'Wajah tidak terdaftar di database siswa.');
+                const today = new Date().toLocaleDateString('id-ID', {
+                    day: '2-digit', month: '2-digit', year: 'numeric'
+                });
+                const jam = new Date().toLocaleTimeString('id-ID', {
+                    hour: '2-digit', minute: '2-digit'
+                });
+                
+                const nama = namaInput.value.trim() || 'Tidak diketahui';
+                
+                // Cek apakah notifikasi sudah ada untuk hari ini
+                const existingNotif = notifications.some(n => 
+                    n.type === 'wajah_tidak_dikenal' && 
+                    n.tanggal === today &&
+                    n.nama === nama
+                );
+                
+                if (!existingNotif) {
+                    const newNotif = {
+                        id: Date.now() + Math.random(),
+                        nama: nama,
+                        kelas: kelasSelect.value || '-',
+                        tanggal: today,
+                        jam: jam,
+                        message: '❌ WAJAH TIDAK DIKENALI - Foto tidak cocok dengan database siswa.',
+                        type: 'wajah_tidak_dikenal',
+                        status: 'Mencurigakan'
+                    };
+                    notifications.push(newNotif);
+                    if (notifications.length > 100) {
+                        notifications = notifications.slice(-100);
+                    }
+                    saveData();
+                    renderNotifications();
+                }
+                
+                // Alert peringatan
+                alert('⚠️ PERINGATAN: WAJAH TIDAK DIKENALI!\n\nWajah yang diambil tidak cocok dengan data siswa di database.\n\nSilakan:\n1. Pastikan siswa sudah terdaftar di database\n2. Upload foto siswa di menu Database Siswa\n3. Coba ambil foto dengan pencahayaan yang lebih baik');
             }
 
         } catch (error) {
@@ -2060,11 +2081,13 @@
             faceText.textContent = '❌ Error verifikasi wajah';
             faceDetail.textContent = 'Terjadi kesalahan saat verifikasi. Silakan coba lagi.';
             faceVerificationResult = { match: false, siswa: null, reason: 'Error' };
+            absenBtn.disabled = true;
         }
+        
+        isFaceVerifying = false;
     }
 
     async function findMatchingFace(descriptor) {
-        // Cari siswa dengan foto di database
         const studentsWithPhoto = siswaData.filter(s => s.foto);
         
         if (studentsWithPhoto.length === 0) {
@@ -2072,7 +2095,7 @@
         }
 
         let bestMatch = null;
-        let bestDistance = 0.6; // Threshold untuk matching
+        let bestDistance = 0.6;
 
         for (const student of studentsWithPhoto) {
             try {
@@ -2086,7 +2109,6 @@
                 ).withFaceLandmarks().withFaceDescriptors();
 
                 if (detections.length > 0) {
-                    // Bandingkan face descriptor
                     const distance = faceapi.euclideanDistance(descriptor, detections[0].descriptor);
                     if (distance < bestDistance) {
                         bestDistance = distance;
@@ -2101,38 +2123,8 @@
         return bestMatch;
     }
 
-    function showNotification(title, message) {
-        // Tambahkan notifikasi ke panel
-        const today = new Date().toLocaleDateString('id-ID', {
-            day: '2-digit', month: '2-digit', year: 'numeric'
-        });
-        const jam = new Date().toLocaleTimeString('id-ID', {
-            hour: '2-digit', minute: '2-digit'
-        });
-        
-        const newNotif = {
-            id: Date.now() + Math.random(),
-            nama: title,
-            kelas: '-',
-            tanggal: today,
-            jam: jam,
-            message: message,
-            type: 'wajah_tidak_dikenal',
-            status: 'Mencurigakan'
-        };
-        notifications.push(newNotif);
-        if (notifications.length > 100) {
-            notifications = notifications.slice(-100);
-        }
-        saveData();
-        renderNotifications();
-        
-        // Alert
-        alert(`⚠️ ${title}\n${message}`);
-    }
-
     // ==============================================================
-    // 5. LOKASI - REVERSE GEOCODING
+    // LOKASI
     // ==============================================================
     async function getLocationName(lat, lng) {
         try {
@@ -2175,7 +2167,7 @@
     }, 30000);
 
     // ==============================================================
-    // 6. SCAN BARCODE
+    // SCAN BARCODE
     // ==============================================================
     function setScanMode(mode) {
         scanMode = mode;
@@ -2310,7 +2302,6 @@
         photoStatus.textContent = 'Foto dari scan berhasil diambil ✅';
         photoStatus.style.color = '#1f9d5a';
         document.querySelector('.tab-btn[data-tab="tabAbsen"]').click();
-        // Lakukan verifikasi wajah
         verifyFace(dataUrl);
         alert('✅ Foto berhasil diambil dari scan! Silakan lanjutkan absen.');
     });
@@ -2349,7 +2340,7 @@
     }
 
     // ==============================================================
-    // 7. FOTO SISWA
+    // FOTO SISWA
     // ==============================================================
     fotoInput.addEventListener('change', function(e) {
         if (this.files && this.files[0]) {
@@ -2389,7 +2380,7 @@
     }
 
     // ==============================================================
-    // 8. IMPORT EXCEL
+    // IMPORT EXCEL
     // ==============================================================
     function showImportModal() {
         document.getElementById('importModal').classList.add('active');
@@ -2569,7 +2560,7 @@
     }
 
     // ==============================================================
-    // 9. PRINT BARCODE
+    // PRINT BARCODE
     // ==============================================================
     function generateBarcodes() {
         const filterKelas = document.getElementById('filterKelasPrint').value;
@@ -2901,7 +2892,7 @@
     }
 
     // ==============================================================
-    // 10. TOGGLE BARCODE SELECT
+    // TOGGLE BARCODE SELECT
     // ==============================================================
     function toggleBarcodeSelect(id) {
         const checkbox = document.querySelector(`.barcode-check[data-id="${id}"]`);
@@ -2941,7 +2932,7 @@
     }
 
     // ==============================================================
-    // 11. LOAD & SIMPAN DATA
+    // LOAD & SIMPAN DATA
     // ==============================================================
     function loadData() {
         const stored = localStorage.getItem('absensiEkskul');
@@ -3034,7 +3025,6 @@
             updateCurrentLocationName();
         }, 1000);
         
-        // Load face models di background
         setTimeout(() => {
             loadFaceModels();
         }, 2000);
@@ -3051,7 +3041,7 @@
     }
 
     // ==============================================================
-    // 12. DEFAULT SISWA
+    // DEFAULT SISWA
     // ==============================================================
     function loadDefaultSiswa() {
         siswaData = [
@@ -3098,7 +3088,7 @@
     }
 
     // ==============================================================
-    // 13. RENDER SISWA LIST
+    // RENDER SISWA LIST
     // ==============================================================
     function renderSiswaList(filter = '') {
         const list = document.getElementById('siswaList');
@@ -3177,7 +3167,7 @@
     }
 
     // ==============================================================
-    // 14. MODAL SISWA
+    // MODAL SISWA
     // ==============================================================
     function showTambahSiswaModal(siswa = null) {
         const modal = document.getElementById('tambahSiswaModal');
@@ -3264,7 +3254,7 @@
     }
 
     // ==============================================================
-    // 15. RENDER ABSENSI
+    // RENDER ABSENSI
     // ==============================================================
     function renderAll() {
         renderTable();
@@ -3381,8 +3371,10 @@
         todayNotif.forEach((notif, index) => {
             const isLokasiSalah = notif.type === 'lokasi_salah';
             const isWajahTidakDikenal = notif.type === 'wajah_tidak_dikenal';
-            const itemClass = isLokasiSalah ? 'notification-item lokasi-salah' : 'notification-item';
-            const iconClass = isLokasiSalah ? 'fas fa-map-marker-alt' : (isWajahTidakDikenal ? 'fas fa-user-slash' : 'fas fa-exclamation-triangle');
+            const itemClass = isLokasiSalah ? 'notification-item lokasi-salah' : 
+                             (isWajahTidakDikenal ? 'notification-item wajah-tidak-dikenal' : 'notification-item');
+            const iconClass = isLokasiSalah ? 'fas fa-map-marker-alt' : 
+                             (isWajahTidakDikenal ? 'fas fa-user-slash' : 'fas fa-exclamation-triangle');
             
             html += `
                 <div class="${itemClass}">
@@ -3391,9 +3383,11 @@
                         <strong>${escapeHtml(notif.nama)}</strong> ${notif.message}
                     </span>
                     <span class="notif-time">${escapeHtml(notif.jam)}</span>
-                    <button class="notif-action" onclick="removeNotification(${index})" title="Tandai selesai">
-                        <i class="fas fa-check"></i>
-                    </button>
+                    <div class="notif-actions">
+                        <button class="notif-hapus" onclick="removeNotification(${index})" title="Hapus notifikasi">
+                            <i class="fas fa-trash"></i> Hapus
+                        </button>
+                    </div>
                 </div>
             `;
         });
@@ -3411,7 +3405,7 @@
     }
 
     // ==============================================================
-    // 16. CHECKBOX FUNCTIONS
+    // CHECKBOX FUNCTIONS
     // ==============================================================
     function toggleAllCheckbox() {
         const checkboxes = document.querySelectorAll('.row-checkbox');
@@ -3435,7 +3429,7 @@
     }
 
     // ==============================================================
-    // 17. LOKASI FUNCTIONS
+    // LOKASI FUNCTIONS
     // ==============================================================
     function getCurrentPosition() {
         return new Promise((resolve, reject) => {
@@ -3539,7 +3533,7 @@
     }
 
     // ==============================================================
-    // 18. TAMBAH ABSEN DENGAN VERIFIKASI WAJAH
+    // TAMBAH ABSEN DENGAN VERIFIKASI WAJAH
     // ==============================================================
     async function tambahAbsen(metode = 'Foto') {
         const nama = namaInput.value.trim();
@@ -3556,56 +3550,18 @@
             return;
         }
 
-        // Verifikasi wajah jika metode Foto dan face verification tersedia
-        let faceVerified = false;
-        let faceStatus = 'Tidak Diverifikasi';
-        
-        if (metode === 'Foto' && isFaceModelLoaded) {
-            // Jika belum ada hasil verifikasi, lakukan verifikasi
-            if (!faceVerificationResult) {
-                await verifyFace(capturedPhotoData);
+        // Jika metode Foto dan ada face verification, cek status
+        if (metode === 'Foto' && faceVerificationResult !== null) {
+            if (!faceVerificationResult.match) {
+                alert('❌ ABSEN DITOLAK!\n\nWajah tidak cocok dengan data di database.\n\nSilakan:\n1. Pastikan siswa sudah terdaftar di database\n2. Upload foto siswa di menu Database Siswa\n3. Coba ambil foto dengan pencahayaan yang lebih baik');
+                return;
             }
-            
-            if (faceVerificationResult) {
-                if (faceVerificationResult.match) {
-                    faceVerified = true;
-                    faceStatus = 'Wajah Cocok';
-                    // Pastikan nama sesuai dengan hasil verifikasi
-                    if (faceVerificationResult.siswa && nama !== faceVerificationResult.siswa.nama) {
-                        const konfirm = confirm(
-                            `⚠️ Nama yang dimasukkan (${nama}) tidak sesuai dengan hasil verifikasi wajah (${faceVerificationResult.siswa.nama}).\n` +
-                            `Apakah Anda ingin menggunakan nama dari verifikasi wajah?`
-                        );
-                        if (konfirm) {
-                            namaInput.value = faceVerificationResult.siswa.nama;
-                            const options = kelasSelect.options;
-                            for (let i = 0; i < options.length; i++) {
-                                if (options[i].value === faceVerificationResult.siswa.kelas) {
-                                    kelasSelect.selectedIndex = i;
-                                    break;
-                                }
-                            }
-                            // Re-ambil nama dan kelas
-                            const newNama = namaInput.value.trim();
-                            const newKelas = kelasSelect.value;
-                            // Lanjutkan proses dengan data baru
-                            return tambahAbsen(metode);
-                        }
-                    }
-                } else {
-                    // Wajah tidak cocok
-                    const konfirm = confirm(
-                        `⚠️ PERINGATAN: Wajah tidak dikenali!\n\n` +
-                        `Nama yang dimasukkan: ${nama}\n` +
-                        `Status: ${faceVerificationResult.reason || 'Tidak cocok'}\n\n` +
-                        `Apakah Anda tetap ingin melanjutkan absen?`
-                    );
-                    if (!konfirm) {
-                        return;
-                    }
-                    faceStatus = 'Wajah Tidak Cocok';
-                }
-            }
+        }
+
+        // Jika metode Foto dan belum ada verifikasi (misal face model gagal)
+        if (metode === 'Foto' && faceVerificationResult === null && isFaceModelLoaded) {
+            alert('Silakan ambil foto terlebih dahulu untuk verifikasi wajah.');
+            return;
         }
 
         const today = new Date().toLocaleDateString('id-ID', {
@@ -3646,23 +3602,8 @@
             notificationMessage = 'melakukan absen tanpa data lokasi (GPS tidak aktif).';
         }
 
-        // Tambahkan notifikasi jika wajah tidak cocok
-        if (metode === 'Foto' && faceVerificationResult && !faceVerificationResult.match) {
-            const notifMsg = `wajah tidak cocok dengan data ${nama} di database.`;
-            notifications.push({
-                id: Date.now() + Math.random(),
-                nama: nama,
-                kelas: kelas,
-                tanggal: tanggal,
-                jam: jam,
-                message: notifMsg,
-                type: 'wajah_tidak_dikenal',
-                status: 'Mencurigakan'
-            });
-            if (notifications.length > 100) {
-                notifications = notifications.slice(-100);
-            }
-        }
+        const faceVerified = faceVerificationResult ? faceVerificationResult.match : false;
+        const faceStatus = faceVerified ? 'Wajah Cocok' : 'Tidak Diverifikasi';
 
         const newRecord = {
             id: now,
@@ -3716,6 +3657,7 @@
             photoStatus.style.color = '#1f9d5a';
             faceResult.classList.remove('show', 'match', 'unmatch', 'loading');
             faceVerificationResult = null;
+            absenBtn.disabled = false;
             refreshCamera();
         }
 
@@ -3734,7 +3676,7 @@
     });
 
     // ==============================================================
-    // 19. NOTIFICATION FUNCTIONS
+    // NOTIFICATION FUNCTIONS
     // ==============================================================
     function removeNotification(index) {
         const today = new Date().toLocaleDateString('id-ID', {
@@ -3753,7 +3695,7 @@
     }
 
     // ==============================================================
-    // 20. HAPUS FUNCTIONS
+    // HAPUS FUNCTIONS
     // ==============================================================
     function deleteSingleRecord(id) {
         const record = absensiData.find(item => item.id === id);
@@ -3820,7 +3762,7 @@
     });
 
     // ==============================================================
-    // 21. EXPORT CSV
+    // EXPORT CSV
     // ==============================================================
     function exportCSV() {
         if (absensiData.length === 0) {
@@ -3854,7 +3796,7 @@
     }
 
     // ==============================================================
-    // 22. INIT
+    // INIT
     // ==============================================================
     (function init() {
         loadData();
@@ -3866,7 +3808,6 @@
             updateCurrentLocationName();
         }, 1500);
         
-        // Load face models
         setTimeout(() => {
             loadFaceModels().then(loaded => {
                 if (loaded) {

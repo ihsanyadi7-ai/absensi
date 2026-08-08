@@ -8,13 +8,20 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
     <!-- Barcode Scanner Library -->
     <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.0/umd/index.min.js"></script>
-    <!-- jsBarcode Library untuk generate barcode -->
+    <!-- jsBarcode Library -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     <!-- SheetJS untuk import Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- html2canvas untuk screenshot barcode -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- jsPDF untuk export PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- face-api.js untuk deteksi wajah -->
+    <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <style>
+        /* ============================================================
+           STYLE UTAMA
+           ============================================================ */
         * {
             margin: 0;
             padding: 0;
@@ -237,7 +244,7 @@
             position: relative;
         }
 
-        #video, #barcodeVideo {
+        #video, #scanVideo {
             width: 100%;
             display: block;
             background: #121f2f;
@@ -245,7 +252,7 @@
             object-fit: cover;
         }
 
-        #canvas {
+        #canvas, #scanCanvas {
             display: none;
         }
 
@@ -338,6 +345,46 @@
             pointer-events: none;
         }
 
+        /* Face Detection Result */
+        .face-result {
+            margin-top: 12px;
+            padding: 12px;
+            border-radius: 12px;
+            display: none;
+            border: 2px solid;
+        }
+        .face-result.show {
+            display: block;
+        }
+        .face-result.match {
+            background: #e8f5ed;
+            border-color: #1f9d5a;
+            color: #0f6a3a;
+        }
+        .face-result.unmatch {
+            background: #fef0f0;
+            border-color: #d14c4c;
+            color: #9e2a2a;
+        }
+        .face-result.loading {
+            background: #fff3cd;
+            border-color: #e6a020;
+            color: #856404;
+        }
+        .face-result .face-icon {
+            font-size: 1.5rem;
+            margin-right: 10px;
+        }
+        .face-result .face-text {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        .face-result .face-detail {
+            font-size: 0.85rem;
+            margin-top: 4px;
+            opacity: 0.8;
+        }
+
         /* Barcode Scanner */
         .barcode-result {
             margin-top: 12px;
@@ -362,7 +409,9 @@
             word-break: break-all;
         }
 
-        /* Print Barcode */
+        /* ============================================================
+           PRINT BARCODE
+           ============================================================ */
         .print-barcode-section {
             background: white;
             padding: 20px 25px;
@@ -484,7 +533,9 @@
             color: #1f9d5a;
         }
 
-        /* Print preview styles */
+        /* ============================================================
+           STYLE UNTUK PRINT / CETAK
+           ============================================================ */
         @media print {
             body * {
                 visibility: hidden;
@@ -498,21 +549,25 @@
                 top: 0;
                 width: 100%;
                 padding: 20px;
-            }
-            .print-area .barcode-card {
-                break-inside: avoid;
-                page-break-inside: avoid;
-                border: 1px solid #ddd;
-                padding: 12px;
-                margin: 8px;
-                display: inline-block;
-                width: 220px;
                 background: white;
             }
             .print-area .barcode-grid {
                 display: flex;
                 flex-wrap: wrap;
                 justify-content: center;
+                gap: 12px;
+            }
+            .print-area .barcode-card {
+                break-inside: avoid;
+                page-break-inside: avoid;
+                border: 1px solid #ddd;
+                padding: 12px;
+                margin: 6px;
+                display: inline-block;
+                width: 210px;
+                background: white;
+                box-shadow: none !important;
+                border-radius: 8px;
             }
             .print-area .barcode-card .barcode-foto {
                 width: 70px;
@@ -520,6 +575,57 @@
                 border-radius: 50%;
                 object-fit: cover;
                 border: 3px solid #ddd;
+            }
+            .print-area .barcode-card .barcode-foto-placeholder {
+                width: 70px;
+                height: 70px;
+                border-radius: 50%;
+                border: 3px solid #ddd;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: #f0f4f9;
+                color: #b0c3db;
+                font-size: 2rem;
+                margin: 0 auto 8px;
+            }
+            .print-area .barcode-card svg {
+                max-width: 100%;
+            }
+            .print-area .barcode-card .barcode-nama {
+                font-size: 0.9rem;
+                font-weight: 600;
+            }
+            .print-area .barcode-card .barcode-kelas {
+                font-size: 0.8rem;
+                color: #666;
+            }
+            .print-area .barcode-card .barcode-nis {
+                font-size: 0.7rem;
+                color: #999;
+            }
+            .print-area .barcode-card .barcode-checkbox {
+                display: none !important;
+            }
+            .print-area .barcode-card .card-actions {
+                display: none !important;
+            }
+            .print-area .print-header {
+                text-align: center;
+                margin-bottom: 20px;
+                visibility: visible;
+            }
+            .print-area .print-header h2 {
+                color: #0b2b4a;
+                font-size: 1.5rem;
+            }
+            .print-area .print-header p {
+                color: #526b8a;
+                font-size: 0.9rem;
+            }
+            .print-area .print-header hr {
+                margin: 10px 0;
+                border: 1px solid #e6edf6;
             }
             .no-print {
                 display: none !important;
@@ -529,7 +635,9 @@
             }
         }
 
-        /* Tabel */
+        /* ============================================================
+           Tabel Riwayat
+           ============================================================ */
         .table-wrap {
             background: white;
             border-radius: 28px;
@@ -603,6 +711,7 @@
         .badge.lokasi-benar { background: #c7f0d9; color: #0f6a3a; }
         .badge.barcode { background: #d4e2fc; color: #144b8a; }
         .badge.foto { background: #cfe2ff; color: #084298; }
+        .badge.tidak-dikenal { background: #f8d7da; color: #9e2a2a; }
 
         .delete-btn {
             background: none;
@@ -824,7 +933,7 @@
             color: #1d3a5f;
             font-weight: 600;
             margin: 0;
-            min-width: 80px;
+            min-width: 100px;
         }
         .location-settings input {
             padding: 8px 12px;
@@ -867,6 +976,15 @@
         .location-status.nonaktif {
             background: #f8d7da;
             color: #9e2a2a;
+        }
+        .location-name-display {
+            font-size: 0.85rem;
+            color: #1a5fb0;
+            font-weight: 600;
+            padding: 4px 12px;
+            background: #e9eff6;
+            border-radius: 40px;
+            display: inline-block;
         }
 
         /* Database Siswa */
@@ -968,7 +1086,6 @@
             display: none;
         }
 
-        /* Siswa Item dengan Foto */
         .siswa-item {
             display: flex;
             justify-content: space-between;
@@ -997,6 +1114,7 @@
             border: 2px solid #e6edf6;
             background: #f0f4f9;
             flex-shrink: 0;
+            cursor: pointer;
         }
         .siswa-item .info .foto-placeholder {
             width: 44px;
@@ -1076,7 +1194,6 @@
             background: #a0abbd;
         }
 
-        /* Print Barcode Grid */
         .print-area {
             display: none;
         }
@@ -1084,7 +1201,6 @@
             display: block;
         }
 
-        /* Preview Import */
         .preview-import {
             margin-top: 15px;
             padding: 15px;
@@ -1118,7 +1234,6 @@
             color: #d14c4c;
         }
 
-        /* Modal Foto Preview */
         .foto-preview-modal {
             position: fixed;
             top: 0;
@@ -1143,6 +1258,85 @@
             border: 4px solid white;
         }
 
+        /* Scan Mode Toggle */
+        .scan-mode-toggle {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .scan-mode-toggle .btn {
+            flex: 1;
+            justify-content: center;
+        }
+        .scan-mode-toggle .btn.active {
+            background: #6f42c1;
+            color: white;
+            border-color: #6f42c1;
+        }
+
+        .scan-status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 12px;
+            background: #f8fafc;
+            text-align: center;
+            font-size: 0.85rem;
+            color: #526b8a;
+        }
+        .scan-status.active {
+            background: #e8f5ed;
+            color: #0f6a3a;
+            border: 1px solid #1f9d5a;
+        }
+        .scan-status.error {
+            background: #fef0f0;
+            color: #9e2a2a;
+            border: 1px solid #d14c4c;
+        }
+
+        .location-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: #f0f7ff;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            color: #1a5fb0;
+        }
+        .location-info i {
+            color: #2a7de1;
+        }
+
+        .face-detection-status {
+            margin-top: 8px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            background: #f8fafc;
+            color: #526b8a;
+            border: 1px solid #e6edf6;
+            display: none;
+        }
+        .face-detection-status.show {
+            display: block;
+        }
+        .face-detection-status.loading {
+            background: #fff3cd;
+            border-color: #e6a020;
+            color: #856404;
+        }
+        .face-detection-status.success {
+            background: #e8f5ed;
+            border-color: #1f9d5a;
+            color: #0f6a3a;
+        }
+        .face-detection-status.error {
+            background: #fef0f0;
+            border-color: #d14c4c;
+            color: #9e2a2a;
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -1165,6 +1359,8 @@
             .barcode-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
             .siswa-item { flex-direction: column; align-items: flex-start; gap: 8px; }
             .siswa-item .actions { align-self: flex-end; }
+            .scan-mode-toggle { flex-direction: column; }
+            .location-info { font-size: 0.7rem; padding: 4px 8px; }
         }
     </style>
 </head>
@@ -1193,13 +1389,13 @@
     <!-- Tabs -->
     <div class="tabs">
         <button class="tab-btn active" data-tab="tabAbsen"><i class="fas fa-camera"></i> Absen</button>
-        <button class="tab-btn" data-tab="tabBarcode"><i class="fas fa-qrcode"></i> Scan Barcode</button>
+        <button class="tab-btn" data-tab="tabScan"><i class="fas fa-qrcode"></i> Scan Barcode</button>
         <button class="tab-btn" data-tab="tabPrint"><i class="fas fa-print"></i> Print Barcode</button>
         <button class="tab-btn" data-tab="tabSiswa"><i class="fas fa-users"></i> Database Siswa</button>
         <button class="tab-btn" data-tab="tabRiwayat"><i class="fas fa-history"></i> Riwayat</button>
     </div>
 
-    <!-- Tab 1: Absen dengan Foto -->
+    <!-- Tab 1: Absen dengan Foto + Deteksi Wajah -->
     <div id="tabAbsen" class="tab-content active">
         <div class="camera-section">
             <div class="camera-wrapper">
@@ -1246,6 +1442,13 @@
                         <span id="photoStatus" style="font-size:0.85rem; color:#4b6e92;">Belum ada foto</span>
                     </div>
 
+                    <!-- Face Detection Result -->
+                    <div class="face-result" id="faceResult">
+                        <span class="face-icon" id="faceIcon"><i class="fas fa-user-check"></i></span>
+                        <span class="face-text" id="faceText">Wajah dikenali</span>
+                        <div class="face-detail" id="faceDetail">-</div>
+                    </div>
+
                     <button class="btn-absen" id="absenBtn">
                         <i class="fas fa-check-circle"></i> Absen Sekarang
                     </button>
@@ -1270,6 +1473,13 @@
                     <span id="locationStatus" class="location-status nonaktif"><i class="fas fa-circle"></i> Belum diset</span>
                     <button class="btn-small success" onclick="saveLocationSettings()"><i class="fas fa-save"></i> Simpan</button>
                 </div>
+                <div class="location-row" style="justify-content: center; padding: 8px; background: #f0f7ff; border-radius: 12px;">
+                    <i class="fas fa-map-pin" style="color: #2a7de1;"></i>
+                    <span style="font-weight:600; color:#0b2b4a;">Lokasi saat ini:</span>
+                    <span id="currentLocationName" class="location-name-display">
+                        <i class="fas fa-spinner fa-spin"></i> Mendeteksi...
+                    </span>
+                </div>
                 <div style="font-size: 0.8rem; color: #6c87a8; margin-top: 4px;">
                     <i class="fas fa-info-circle"></i> Siswa akan terdeteksi jika absen di luar radius yang ditentukan.
                 </div>
@@ -1278,15 +1488,17 @@
     </div>
 
     <!-- Tab 2: Scan Barcode -->
-    <div id="tabBarcode" class="tab-content">
+    <div id="tabScan" class="tab-content">
         <div class="camera-section">
             <div class="camera-wrapper">
-                <div class="video-box">
-                    <video id="barcodeVideo" autoplay muted></video>
+                <div class="video-box" id="scanVideoBox">
+                    <video id="scanVideo" autoplay muted></video>
+                    <canvas id="scanCanvas" style="display:none;"></canvas>
                     <div class="capture-tools">
-                        <button class="btn btn-primary" id="startBarcodeBtn"><i class="fas fa-play"></i> Mulai Scan</button>
-                        <button class="btn btn-danger" id="stopBarcodeBtn"><i class="fas fa-stop"></i> Berhenti</button>
-                        <button class="btn btn-outline" id="refreshBarcodeBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
+                        <button class="btn btn-primary" id="startScanBtn"><i class="fas fa-play"></i> Mulai Scan</button>
+                        <button class="btn btn-danger" id="stopScanBtn"><i class="fas fa-stop"></i> Berhenti</button>
+                        <button class="btn btn-outline" id="refreshScanBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
+                        <button class="btn btn-success" id="captureScanBtn"><i class="fas fa-camera"></i> Ambil Foto</button>
                     </div>
                 </div>
 
@@ -1294,19 +1506,30 @@
                     <h4 style="color: #0b2b4a; margin-bottom: 12px;">
                         <i class="fas fa-qrcode" style="color: #6f42c1;"></i> Scan Barcode / QR Code
                     </h4>
-                    <p style="font-size: 0.9rem; color: #526b8a; margin-bottom: 12px;">
-                        Arahkan kamera ke barcode/QR Code siswa untuk absensi otomatis.
-                    </p>
+                    
+                    <div class="scan-mode-toggle">
+                        <button class="btn active" id="modeAuto" onclick="setScanMode('auto')">
+                            <i class="fas fa-magic"></i> Auto
+                        </button>
+                        <button class="btn" id="modeBarcode" onclick="setScanMode('barcode')">
+                            <i class="fas fa-qrcode"></i> Barcode
+                        </button>
+                    </div>
+
                     <div class="barcode-result" id="barcodeResult">
                         <div class="label">Hasil Scan:</div>
                         <div class="value" id="barcodeValue">-</div>
-                        <div style="margin-top: 10px;">
-                            <button class="btn btn-success" onclick="absenFromBarcode()" style="width:100%;">
-                                <i class="fas fa-check-circle"></i> Absen dengan Data Ini
+                        <div style="margin-top: 10px; display:flex; gap:8px; flex-wrap:wrap;">
+                            <button class="btn btn-success" onclick="absenFromScan()" style="flex:1;">
+                                <i class="fas fa-check-circle"></i> Absen
+                            </button>
+                            <button class="btn btn-outline" onclick="clearScanResult()" style="flex:1;">
+                                <i class="fas fa-times"></i> Batal
                             </button>
                         </div>
                     </div>
-                    <div id="barcodeStatus" style="margin-top: 10px; font-size: 0.85rem; color: #526b8a; text-align: center;">
+
+                    <div id="scanStatus" class="scan-status">
                         <i class="fas fa-info-circle"></i> Klik "Mulai Scan" untuk mengaktifkan kamera
                     </div>
                 </div>
@@ -1348,6 +1571,7 @@
                 </select>
                 <button class="btn btn-primary" onclick="generateBarcodes()"><i class="fas fa-sync"></i> Generate</button>
                 <button class="btn btn-success" onclick="printBarcodes()"><i class="fas fa-print"></i> Cetak</button>
+                <button class="btn btn-danger" onclick="exportBarcodePDF()"><i class="fas fa-file-pdf"></i> Export PDF</button>
                 <button class="btn btn-info" onclick="saveBarcodeImage()"><i class="fas fa-image"></i> Simpan Gambar</button>
                 <label style="display:flex;align-items:center;gap:8px;font-size:0.9rem;color:#526b8a;">
                     <input type="checkbox" id="selectAllBarcode" onchange="toggleAllBarcode()" /> Pilih Semua
@@ -1465,7 +1689,7 @@
     <img id="fotoPreviewImg" src="" alt="Foto Siswa" />
 </div>
 
-<!-- Print Area untuk mencetak barcode -->
+<!-- Print Area -->
 <div class="print-area" id="printArea"></div>
 
 <!-- Modal Import Excel -->
@@ -1496,7 +1720,7 @@
     </div>
 </div>
 
-<!-- Modal Tambah/Edit Siswa dengan Foto -->
+<!-- Modal Tambah/Edit Siswa -->
 <div class="modal-overlay" id="tambahSiswaModal">
     <div class="modal-box">
         <h3><i class="fas fa-user-plus" style="color: #6f42c1;"></i> <span id="modalSiswaTitle">Tambah Siswa</span></h3>
@@ -1570,9 +1794,9 @@
 </div>
 
 <script>
-    // --------------------------------------------------------------
+    // ==============================================================
     // 1. ELEMEN & GLOBAL
-    // --------------------------------------------------------------
+    // ==============================================================
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const captureBtn = document.getElementById('captureBtn');
@@ -1584,30 +1808,36 @@
     const kelasSelect = document.getElementById('kelasSiswa');
     const absenBtn = document.getElementById('absenBtn');
 
+    // Face detection elements
+    const faceResult = document.getElementById('faceResult');
+    const faceIcon = document.getElementById('faceIcon');
+    const faceText = document.getElementById('faceText');
+    const faceDetail = document.getElementById('faceDetail');
+
+    // Scan elements
+    const scanVideo = document.getElementById('scanVideo');
+    const scanCanvas = document.getElementById('scanCanvas');
+    const startScanBtn = document.getElementById('startScanBtn');
+    const stopScanBtn = document.getElementById('stopScanBtn');
+    const refreshScanBtn = document.getElementById('refreshScanBtn');
+    const captureScanBtn = document.getElementById('captureScanBtn');
+    const scanStatus = document.getElementById('scanStatus');
+
+    // Barcode result
+    const barcodeResult = document.getElementById('barcodeResult');
+    const barcodeValue = document.getElementById('barcodeValue');
+
+    // Mode buttons
+    const modeAutoBtn = document.getElementById('modeAuto');
+    const modeBarcodeBtn = document.getElementById('modeBarcode');
+
+    // Location elements
+    const currentLocationName = document.getElementById('currentLocationName');
+
+    // History
     const historyBody = document.getElementById('historyBody');
     const totalRecordSpan = document.getElementById('totalRecord');
     const selectAllCheckbox = document.getElementById('selectAll');
-
-    // Barcode elements
-    const barcodeVideo = document.getElementById('barcodeVideo');
-    const startBarcodeBtn = document.getElementById('startBarcodeBtn');
-    const stopBarcodeBtn = document.getElementById('stopBarcodeBtn');
-    const refreshBarcodeBtn = document.getElementById('refreshBarcodeBtn');
-    const barcodeResult = document.getElementById('barcodeResult');
-    const barcodeValue = document.getElementById('barcodeValue');
-    const barcodeStatus = document.getElementById('barcodeStatus');
-
-    // Import elements
-    const fileInput = document.getElementById('fileInput');
-    const uploadArea = document.getElementById('uploadArea');
-    const importPreview = document.getElementById('importPreview');
-    const confirmImportBtn = document.getElementById('confirmImportBtn');
-
-    // Foto elements
-    const fotoInput = document.getElementById('fotoInput');
-    const fotoPreview = document.getElementById('fotoPreview');
-    const fotoPlaceholder = document.getElementById('fotoPlaceholder');
-    const fotoUploadArea = document.getElementById('fotoUploadArea');
 
     // Statistik
     const totalSiswaSpan = document.getElementById('totalSiswa');
@@ -1625,20 +1855,35 @@
     const locationRadiusInput = document.getElementById('locationRadius');
     const locationStatus = document.getElementById('locationStatus');
 
+    // Import elements
+    const fileInput = document.getElementById('fileInput');
+    const uploadArea = document.getElementById('uploadArea');
+    const importPreview = document.getElementById('importPreview');
+    const confirmImportBtn = document.getElementById('confirmImportBtn');
+
+    // Foto elements
+    const fotoInput = document.getElementById('fotoInput');
+    const fotoPreview = document.getElementById('fotoPreview');
+    const fotoPlaceholder = document.getElementById('fotoPlaceholder');
+
     // Data storage
     let absensiData = [];
     let notifications = [];
     let siswaData = [];
     let capturedPhotoData = null;
     let stream = null;
-    let barcodeStream = null;
+    let scanStream = null;
     let deleteMode = 'selected';
     let scannedBarcode = null;
     let isScanning = false;
+    let scanMode = 'auto';
     let selectedBarcodes = new Set();
     let importData = [];
     let tempFotoData = null;
-    let currentBarcodeIds = [];
+    let barcodeReader = null;
+    let currentLocationNameText = 'Mendeteksi...';
+    let isFaceModelLoaded = false;
+    let faceVerificationResult = null;
 
     let locationSettings = {
         lat: null,
@@ -1647,9 +1892,9 @@
         name: ''
     };
 
-    // --------------------------------------------------------------
+    // ==============================================================
     // 2. TABS
-    // --------------------------------------------------------------
+    // ==============================================================
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -1657,8 +1902,8 @@
             this.classList.add('active');
             document.getElementById(this.dataset.tab).classList.add('active');
             
-            if (this.dataset.tab !== 'tabBarcode' && isScanning) {
-                stopBarcodeScan();
+            if (this.dataset.tab !== 'tabScan' && isScanning) {
+                stopScan();
             }
             
             if (this.dataset.tab === 'tabPrint') {
@@ -1667,9 +1912,9 @@
         });
     });
 
-    // --------------------------------------------------------------
-    // 3. KAMERA
-    // --------------------------------------------------------------
+    // ==============================================================
+    // 3. KAMERA ABSEN
+    // ==============================================================
     async function startCamera() {
         try {
             if (stream) {
@@ -1698,6 +1943,9 @@
         capturedImg.src = capturedPhotoData;
         photoStatus.textContent = 'Foto berhasil diambil ✅';
         photoStatus.style.color = '#1f9d5a';
+        
+        // Lakukan verifikasi wajah setelah foto diambil
+        verifyFace(capturedPhotoData);
     }
 
     function refreshCamera() {
@@ -1706,42 +1954,288 @@
         capturedImg.src = '';
         photoStatus.textContent = 'Kamera dimuat ulang';
         photoStatus.style.color = '#4b6e92';
+        faceResult.classList.remove('show', 'match', 'unmatch', 'loading');
     }
 
     captureBtn.addEventListener('click', capturePhoto);
     refreshCamBtn.addEventListener('click', refreshCamera);
 
-    // --------------------------------------------------------------
-    // 4. BARCODE SCANNER
-    // --------------------------------------------------------------
-    async function startBarcodeScan() {
+    // ==============================================================
+    // 4. FACE DETECTION & VERIFICATION
+    // ==============================================================
+    async function loadFaceModels() {
         try {
-            if (barcodeStream) {
-                barcodeStream.getTracks().forEach(t => t.stop());
+            const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
+            await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+            await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+            await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+            await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+            isFaceModelLoaded = true;
+            console.log('Face API models loaded successfully');
+            return true;
+        } catch (err) {
+            console.error('Error loading face models:', err);
+            isFaceModelLoaded = false;
+            return false;
+        }
+    }
+
+    async function verifyFace(photoData) {
+        if (!isFaceModelLoaded) {
+            // Coba load models
+            const loaded = await loadFaceModels();
+            if (!loaded) {
+                faceResult.className = 'face-result show loading';
+                faceIcon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+                faceText.textContent = 'Model wajah tidak tersedia';
+                faceDetail.textContent = 'Silakan refresh halaman atau periksa koneksi internet.';
+                return;
+            }
+        }
+
+        // Tampilkan loading
+        faceResult.className = 'face-result show loading';
+        faceIcon.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        faceText.textContent = 'Memverifikasi wajah...';
+        faceDetail.textContent = 'Mohon tunggu sebentar.';
+
+        try {
+            // Buat image dari foto
+            const img = new Image();
+            img.src = photoData;
+            await new Promise((resolve) => { img.onload = resolve; });
+
+            // Deteksi wajah di foto
+            const detections = await faceapi.detectAllFaces(
+                img,
+                new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 })
+            ).withFaceLandmarks().withFaceDescriptors();
+
+            if (detections.length === 0) {
+                // Tidak ada wajah terdeteksi
+                faceResult.className = 'face-result show unmatch';
+                faceIcon.innerHTML = '<i class="fas fa-user-slash"></i>';
+                faceText.textContent = 'Tidak ada wajah terdeteksi';
+                faceDetail.textContent = 'Pastikan foto diambil dengan jelas dan wajah terlihat.';
+                faceVerificationResult = { match: false, siswa: null, reason: 'No face detected' };
+                return;
+            }
+
+            // Bandingkan dengan foto siswa di database
+            const matchedStudent = await findMatchingFace(detections[0].descriptor);
+
+            if (matchedStudent) {
+                // Wajah cocok dengan siswa di database
+                faceResult.className = 'face-result show match';
+                faceIcon.innerHTML = '<i class="fas fa-user-check"></i>';
+                faceText.textContent = `✅ Wajah cocok: ${matchedStudent.nama}`;
+                faceDetail.textContent = `Kelas: ${matchedStudent.kelas} | NIS: ${matchedStudent.nis || '-'}`;
+                faceVerificationResult = { match: true, siswa: matchedStudent };
+                
+                // Auto isi nama
+                namaInput.value = matchedStudent.nama;
+                const options = kelasSelect.options;
+                for (let i = 0; i < options.length; i++) {
+                    if (options[i].value === matchedStudent.kelas) {
+                        kelasSelect.selectedIndex = i;
+                        break;
+                    }
+                }
+            } else {
+                // Wajah tidak cocok dengan siapapun di database
+                faceResult.className = 'face-result show unmatch';
+                faceIcon.innerHTML = '<i class="fas fa-user-slash"></i>';
+                faceText.textContent = '❌ ORANG TIDAK DIKENAL';
+                faceDetail.textContent = 'Wajah tidak terdaftar di database. Periksa apakah siswa sudah terdaftar.';
+                faceVerificationResult = { match: false, siswa: null, reason: 'Unknown person' };
+                
+                // Tambahkan notifikasi
+                showNotification('Orang Tidak Dikenal', 'Wajah tidak terdaftar di database siswa.');
+            }
+
+        } catch (error) {
+            console.error('Face verification error:', error);
+            faceResult.className = 'face-result show unmatch';
+            faceIcon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+            faceText.textContent = '❌ Error verifikasi wajah';
+            faceDetail.textContent = 'Terjadi kesalahan saat verifikasi. Silakan coba lagi.';
+            faceVerificationResult = { match: false, siswa: null, reason: 'Error' };
+        }
+    }
+
+    async function findMatchingFace(descriptor) {
+        // Cari siswa dengan foto di database
+        const studentsWithPhoto = siswaData.filter(s => s.foto);
+        
+        if (studentsWithPhoto.length === 0) {
+            return null;
+        }
+
+        let bestMatch = null;
+        let bestDistance = 0.6; // Threshold untuk matching
+
+        for (const student of studentsWithPhoto) {
+            try {
+                const img = new Image();
+                img.src = student.foto;
+                await new Promise((resolve) => { img.onload = resolve; });
+
+                const detections = await faceapi.detectAllFaces(
+                    img,
+                    new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 })
+                ).withFaceLandmarks().withFaceDescriptors();
+
+                if (detections.length > 0) {
+                    // Bandingkan face descriptor
+                    const distance = faceapi.euclideanDistance(descriptor, detections[0].descriptor);
+                    if (distance < bestDistance) {
+                        bestDistance = distance;
+                        bestMatch = student;
+                    }
+                }
+            } catch (e) {
+                console.error('Error matching face for student:', student.nama, e);
+            }
+        }
+
+        return bestMatch;
+    }
+
+    function showNotification(title, message) {
+        // Tambahkan notifikasi ke panel
+        const today = new Date().toLocaleDateString('id-ID', {
+            day: '2-digit', month: '2-digit', year: 'numeric'
+        });
+        const jam = new Date().toLocaleTimeString('id-ID', {
+            hour: '2-digit', minute: '2-digit'
+        });
+        
+        const newNotif = {
+            id: Date.now() + Math.random(),
+            nama: title,
+            kelas: '-',
+            tanggal: today,
+            jam: jam,
+            message: message,
+            type: 'wajah_tidak_dikenal',
+            status: 'Mencurigakan'
+        };
+        notifications.push(newNotif);
+        if (notifications.length > 100) {
+            notifications = notifications.slice(-100);
+        }
+        saveData();
+        renderNotifications();
+        
+        // Alert
+        alert(`⚠️ ${title}\n${message}`);
+    }
+
+    // ==============================================================
+    // 5. LOKASI - REVERSE GEOCODING
+    // ==============================================================
+    async function getLocationName(lat, lng) {
+        try {
+            const response = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
+            );
+            const data = await response.json();
+            if (data && data.display_name) {
+                const parts = data.display_name.split(',');
+                let name = parts.slice(0, 3).join(', ').trim();
+                if (name.length > 50) {
+                    name = parts.slice(0, 2).join(', ').trim();
+                }
+                return name;
+            }
+            return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        } catch (error) {
+            console.error('Error getting location name:', error);
+            return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        }
+    }
+
+    async function updateCurrentLocationName() {
+        try {
+            const pos = await getCurrentPosition();
+            const name = await getLocationName(pos.lat, pos.lng);
+            currentLocationNameText = name;
+            currentLocationName.innerHTML = `<i class="fas fa-map-pin"></i> ${name}`;
+            return name;
+        } catch (error) {
+            currentLocationName.innerHTML = '<i class="fas fa-exclamation-triangle" style="color:#e6a020;"></i> Tidak terdeteksi';
+            return null;
+        }
+    }
+
+    setInterval(() => {
+        if (navigator.geolocation) {
+            updateCurrentLocationName();
+        }
+    }, 30000);
+
+    // ==============================================================
+    // 6. SCAN BARCODE
+    // ==============================================================
+    function setScanMode(mode) {
+        scanMode = mode;
+        document.querySelectorAll('.scan-mode-toggle .btn').forEach(b => b.classList.remove('active'));
+        if (mode === 'auto') {
+            modeAutoBtn.classList.add('active');
+            scanStatus.innerHTML = '<i class="fas fa-info-circle"></i> Mode Auto. Mendukung semua format barcode/QR Code.';
+        } else {
+            modeBarcodeBtn.classList.add('active');
+            scanStatus.innerHTML = '<i class="fas fa-info-circle"></i> Mode Barcode. Khusus untuk barcode CODE128/EAN.';
+        }
+        barcodeResult.classList.remove('show');
+        scannedBarcode = null;
+        if (isScanning) {
+            stopScan();
+            setTimeout(startScan, 500);
+        }
+    }
+
+    async function startScan() {
+        try {
+            if (scanStream) {
+                scanStream.getTracks().forEach(t => t.stop());
+                scanStream = null;
             }
             
-            barcodeStream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }
+            scanStream = await navigator.mediaDevices.getUserMedia({
+                video: { 
+                    facingMode: 'environment',
+                    width: { ideal: 640 },
+                    height: { ideal: 480 }
+                }
             });
-            barcodeVideo.srcObject = barcodeStream;
-            await barcodeVideo.play();
+            scanVideo.srcObject = scanStream;
+            await scanVideo.play();
             
-            barcodeStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menunggu scan...';
-            barcodeStatus.style.color = '#e6a020';
             isScanning = true;
+            scanStatus.className = 'scan-status active';
+            scanStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Scanning... Arahkan ke barcode/QR Code';
             
-            const codeReader = new ZXing.BrowserMultiFormatReader();
-            codeReader.decodeFromVideoElement(barcodeVideo, (result, err) => {
+            barcodeResult.classList.remove('show');
+            scannedBarcode = null;
+            
+            if (barcodeReader) {
+                barcodeReader = null;
+            }
+            
+            barcodeReader = new ZXing.BrowserMultiFormatReader();
+            barcodeReader.decodeFromVideoElement(scanVideo, (result, err) => {
                 if (result) {
                     const text = result.getText();
+                    scannedBarcode = text;
                     barcodeValue.textContent = text;
                     barcodeResult.classList.add('show');
-                    barcodeStatus.innerHTML = `<i class="fas fa-check-circle" style="color:#1f9d5a;"></i> Barcode terdeteksi!`;
-                    barcodeStatus.style.color = '#1f9d5a';
-                    scannedBarcode = text;
+                    scanStatus.className = 'scan-status active';
+                    scanStatus.innerHTML = '<i class="fas fa-check-circle" style="color:#1f9d5a;"></i> Barcode terdeteksi!';
                     
                     const siswa = siswaData.find(s => s.nis === text);
                     if (siswa) {
+                        scanStatus.innerHTML = `<i class="fas fa-check-circle" style="color:#1f9d5a;"></i> ✅ Siswa ditemukan: ${siswa.nama} (${siswa.kelas})`;
                         namaInput.value = siswa.nama;
                         const options = kelasSelect.options;
                         for (let i = 0; i < options.length; i++) {
@@ -1750,54 +2244,78 @@
                                 break;
                             }
                         }
-                        document.querySelector('.tab-btn[data-tab="tabAbsen"]').click();
-                        alert(`✅ Siswa ditemukan: ${siswa.nama} (${siswa.kelas})`);
                     } else {
-                        const konfirm = confirm(`Siswa dengan barcode "${text}" tidak ditemukan di database. Apakah ingin mengisi nama manual?`);
-                        if (konfirm) {
-                            document.querySelector('.tab-btn[data-tab="tabAbsen"]').click();
-                            namaInput.value = text;
-                            namaInput.focus();
-                        }
+                        scanStatus.innerHTML = `<i class="fas fa-exclamation-triangle" style="color:#e6a020;"></i> ⚠️ Siswa dengan NIS "${text}" tidak ditemukan di database.`;
                     }
                     
-                    stopBarcodeScan();
+                    stopScan();
                 }
             });
             
         } catch (err) {
-            alert('Gagal mengakses kamera untuk barcode. Pastikan izin kamera diberikan.\nError: ' + err.message);
-            barcodeStatus.innerHTML = `<i class="fas fa-exclamation-triangle" style="color:#d14c4c;"></i> Error: ${err.message}`;
-            barcodeStatus.style.color = '#d14c4c';
+            scanStatus.className = 'scan-status error';
+            scanStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Gagal mengakses kamera: ' + err.message;
+            isScanning = false;
+            alert('Gagal mengakses kamera. Pastikan izin kamera diberikan.\nError: ' + err.message);
         }
     }
 
-    function stopBarcodeScan() {
-        if (barcodeStream) {
-            barcodeStream.getTracks().forEach(t => t.stop());
-            barcodeStream = null;
+    function stopScan() {
+        if (barcodeReader) {
+            try {
+                barcodeReader.reset();
+                barcodeReader = null;
+            } catch(e) {}
         }
-        barcodeVideo.srcObject = null;
+        
+        if (scanStream) {
+            scanStream.getTracks().forEach(t => t.stop());
+            scanStream = null;
+        }
+        scanVideo.srcObject = null;
         isScanning = false;
-        barcodeStatus.innerHTML = '<i class="fas fa-info-circle"></i> Scan dihentikan. Klik "Mulai Scan" untuk memulai.';
-        barcodeStatus.style.color = '#526b8a';
-    }
-
-    function refreshBarcodeCamera() {
-        if (isScanning) {
-            stopBarcodeScan();
-            setTimeout(startBarcodeScan, 500);
-        } else {
-            barcodeStatus.innerHTML = '<i class="fas fa-info-circle"></i> Klik "Mulai Scan" untuk mengaktifkan kamera';
-            barcodeStatus.style.color = '#526b8a';
+        
+        scanStatus.className = 'scan-status';
+        if (!barcodeResult.classList.contains('show')) {
+            scanStatus.innerHTML = '<i class="fas fa-info-circle"></i> Scan dihentikan. Klik "Mulai Scan" untuk memulai.';
         }
     }
 
-    startBarcodeBtn.addEventListener('click', startBarcodeScan);
-    stopBarcodeBtn.addEventListener('click', stopBarcodeScan);
-    refreshBarcodeBtn.addEventListener('click', refreshBarcodeCamera);
+    function refreshScan() {
+        if (isScanning) {
+            stopScan();
+            setTimeout(startScan, 500);
+        } else {
+            scanStatus.className = 'scan-status';
+            scanStatus.innerHTML = '<i class="fas fa-info-circle"></i> Klik "Mulai Scan" untuk mengaktifkan kamera';
+        }
+    }
 
-    function absenFromBarcode() {
+    startScanBtn.addEventListener('click', startScan);
+    stopScanBtn.addEventListener('click', stopScan);
+    refreshScanBtn.addEventListener('click', refreshScan);
+
+    captureScanBtn.addEventListener('click', function() {
+        if (!scanVideo.videoWidth || !scanVideo.videoHeight) {
+            alert('Video belum siap. Mulai scan terlebih dahulu.');
+            return;
+        }
+        scanCanvas.width = scanVideo.videoWidth;
+        scanCanvas.height = scanVideo.videoHeight;
+        const ctx = scanCanvas.getContext('2d');
+        ctx.drawImage(scanVideo, 0, 0, scanCanvas.width, scanCanvas.height);
+        const dataUrl = scanCanvas.toDataURL('image/jpeg', 0.85);
+        capturedPhotoData = dataUrl;
+        capturedImg.src = dataUrl;
+        photoStatus.textContent = 'Foto dari scan berhasil diambil ✅';
+        photoStatus.style.color = '#1f9d5a';
+        document.querySelector('.tab-btn[data-tab="tabAbsen"]').click();
+        // Lakukan verifikasi wajah
+        verifyFace(dataUrl);
+        alert('✅ Foto berhasil diambil dari scan! Silakan lanjutkan absen.');
+    });
+
+    function absenFromScan() {
         if (scannedBarcode) {
             const siswa = siswaData.find(s => s.nis === scannedBarcode);
             if (siswa) {
@@ -1813,16 +2331,28 @@
                 setTimeout(() => {
                     absenBtn.click();
                 }, 300);
+            } else {
+                alert('Siswa dengan NIS "' + scannedBarcode + '" tidak ditemukan di database.');
             }
+        } else {
+            alert('Tidak ada hasil scan. Silakan scan barcode terlebih dahulu.');
         }
     }
 
-    // --------------------------------------------------------------
-    // 5. FOTO SISWA
-    // --------------------------------------------------------------
+    function clearScanResult() {
+        barcodeResult.classList.remove('show');
+        scannedBarcode = null;
+        if (!isScanning) {
+            scanStatus.className = 'scan-status';
+            scanStatus.innerHTML = '<i class="fas fa-info-circle"></i> Hasil scan dibersihkan.';
+        }
+    }
+
+    // ==============================================================
+    // 7. FOTO SISWA
+    // ==============================================================
     fotoInput.addEventListener('change', function(e) {
         if (this.files && this.files[0]) {
-            // Cek ukuran file (max 2MB)
             if (this.files[0].size > 2 * 1024 * 1024) {
                 alert('Ukuran foto terlalu besar. Maksimal 2MB.');
                 this.value = '';
@@ -1858,9 +2388,9 @@
         document.getElementById('fotoPreviewModal').classList.remove('active');
     }
 
-    // --------------------------------------------------------------
-    // 6. IMPORT EXCEL
-    // --------------------------------------------------------------
+    // ==============================================================
+    // 8. IMPORT EXCEL
+    // ==============================================================
     function showImportModal() {
         document.getElementById('importModal').classList.add('active');
         importData = [];
@@ -2038,9 +2568,9 @@
         confirmImportBtn.disabled = true;
     }
 
-    // --------------------------------------------------------------
-    // 7. PRINT BARCODE - GENERATE
-    // --------------------------------------------------------------
+    // ==============================================================
+    // 9. PRINT BARCODE
+    // ==============================================================
     function generateBarcodes() {
         const filterKelas = document.getElementById('filterKelasPrint').value;
         const showFoto = document.getElementById('showFotoPrint').checked;
@@ -2051,7 +2581,6 @@
         }
         
         filteredSiswa = filteredSiswa.filter(s => s.nis && s.nis.trim() !== '');
-        currentBarcodeIds = filteredSiswa.map(s => s.id);
         
         const grid = document.getElementById('barcodeGrid');
         
@@ -2110,9 +2639,6 @@
         updateSelectAllBarcodeState();
     }
 
-    // --------------------------------------------------------------
-    // 8. PRINT BARCODE - DOWNLOAD SINGLE
-    // --------------------------------------------------------------
     function downloadSingleBarcode(id) {
         const card = document.querySelector(`.barcode-card[data-id="${id}"]`);
         if (!card) return;
@@ -2145,9 +2671,6 @@
         });
     }
 
-    // --------------------------------------------------------------
-    // 9. PRINT BARCODE - SAVE ALL IMAGE
-    // --------------------------------------------------------------
     function saveBarcodeImage() {
         const grid = document.getElementById('barcodeGrid');
         const cards = grid.querySelectorAll('.barcode-card');
@@ -2205,9 +2728,6 @@
         });
     }
 
-    // --------------------------------------------------------------
-    // 10. PRINT BARCODE - CETAK
-    // --------------------------------------------------------------
     function printBarcodes() {
         const showFoto = document.getElementById('showFotoPrint').checked;
         let selectedSiswa = [];
@@ -2230,10 +2750,10 @@
         
         const printArea = document.getElementById('printArea');
         printArea.innerHTML = `
-            <div style="text-align:center; margin-bottom:20px;">
-                <h2 style="color:#0b2b4a;">BARCODE SISWA</h2>
-                <p style="color:#526b8a;">Kelas Intensif TIKOM</p>
-                <hr style="margin:10px 0; border:1px solid #e6edf6;">
+            <div class="print-header">
+                <h2>BARCODE SISWA</h2>
+                <p>Kelas Intensif TIKOM</p>
+                <hr>
             </div>
             <div class="barcode-grid">
         `;
@@ -2244,10 +2764,10 @@
                 : `<div class="barcode-foto-placeholder" style="width:70px;height:70px;border-radius:50%;margin:0 auto 8px;border:3px solid #ddd;display:flex;align-items:center;justify-content:center;background:#f0f4f9;color:#b0c3db;font-size:2rem;"><i class="fas fa-user"></i></div>`;
             
             printArea.innerHTML += `
-                <div class="barcode-card" style="border:1px solid #ddd; padding:12px; text-align:center; display:inline-block; width:220px; margin:8px; background:white;">
+                <div class="barcode-card" style="border:1px solid #ddd; padding:12px; text-align:center; display:inline-block; width:210px; margin:6px; background:white; border-radius:8px;">
                     ${fotoHtml}
                     <svg id="print-barcode-${s.id}"></svg>
-                    <div style="font-weight:600; color:#0b2b4a; margin-top:8px;">${escapeHtml(s.nama)}</div>
+                    <div style="font-weight:600; color:#0b2b4a; margin-top:8px; font-size:0.9rem;">${escapeHtml(s.nama)}</div>
                     <div style="color:#526b8a; font-size:0.8rem;">${escapeHtml(s.kelas)}</div>
                     <div style="color:#8195af; font-size:0.7rem;">${escapeHtml(s.nis)}</div>
                 </div>
@@ -2281,9 +2801,108 @@
         }, 500);
     }
 
-    // --------------------------------------------------------------
-    // 11. TOGGLE BARCODE SELECT
-    // --------------------------------------------------------------
+    function exportBarcodePDF() {
+        const showFoto = document.getElementById('showFotoPrint').checked;
+        let selectedSiswa = [];
+        
+        if (selectedBarcodes.size > 0) {
+            selectedSiswa = siswaData.filter(s => selectedBarcodes.has(s.id) && s.nis && s.nis.trim() !== '');
+        } else {
+            const filterKelas = document.getElementById('filterKelasPrint').value;
+            let filteredSiswa = siswaData;
+            if (filterKelas !== 'semua') {
+                filteredSiswa = siswaData.filter(s => s.kelas === filterKelas);
+            }
+            selectedSiswa = filteredSiswa.filter(s => s.nis && s.nis.trim() !== '');
+        }
+        
+        if (selectedSiswa.length === 0) {
+            alert('Tidak ada siswa yang dipilih untuk diexport.');
+            return;
+        }
+
+        const tempDiv = document.createElement('div');
+        tempDiv.style.cssText = 'position:fixed;left:-9999px;top:0;background:white;padding:20px;display:flex;flex-wrap:wrap;gap:12px;max-width:1000px;';
+        
+        selectedSiswa.forEach(s => {
+            const fotoHtml = (s.foto && showFoto) 
+                ? `<img src="${s.foto}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:3px solid #ddd;margin:0 auto 8px;display:block;" />`
+                : `<div style="width:60px;height:60px;border-radius:50%;margin:0 auto 8px;border:3px solid #ddd;display:flex;align-items:center;justify-content:center;background:#f0f4f9;color:#b0c3db;font-size:2rem;"><i class="fas fa-user"></i></div>`;
+            
+            const card = document.createElement('div');
+            card.style.cssText = 'border:1px solid #ddd;padding:12px;text-align:center;width:200px;background:white;border-radius:8px;';
+            card.innerHTML = `
+                ${fotoHtml}
+                <svg id="pdf-barcode-${s.id}"></svg>
+                <div style="font-weight:600;color:#0b2b4a;margin-top:8px;font-size:0.9rem;">${escapeHtml(s.nama)}</div>
+                <div style="color:#526b8a;font-size:0.8rem;">${escapeHtml(s.kelas)}</div>
+                <div style="color:#8195af;font-size:0.7rem;">${escapeHtml(s.nis)}</div>
+            `;
+            tempDiv.appendChild(card);
+        });
+        
+        document.body.appendChild(tempDiv);
+        
+        selectedSiswa.forEach(s => {
+            try {
+                JsBarcode(`#pdf-barcode-${s.id}`, s.nis, {
+                    format: "CODE128",
+                    width: 1.5,
+                    height: 60,
+                    displayValue: true,
+                    fontSize: 14,
+                    margin: 5
+                });
+            } catch (e) {
+                console.error('Error generating barcode for PDF', s.nis, e);
+            }
+        });
+        
+        setTimeout(() => {
+            html2canvas(tempDiv, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                width: tempDiv.scrollWidth,
+                height: tempDiv.scrollHeight
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                
+                const imgWidth = canvas.width;
+                const imgHeight = canvas.height;
+                const ratio = imgWidth / imgHeight;
+                
+                let finalWidth = pdfWidth - 20;
+                let finalHeight = finalWidth / ratio;
+                
+                if (finalHeight > pdfHeight - 20) {
+                    finalHeight = pdfHeight - 20;
+                    finalWidth = finalHeight * ratio;
+                }
+                
+                const x = (pdfWidth - finalWidth) / 2;
+                const y = (pdfHeight - finalHeight) / 2;
+                
+                pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
+                pdf.save(`barcode-siswa-${new Date().toISOString().slice(0,10)}.pdf`);
+                
+                document.body.removeChild(tempDiv);
+            }).catch(err => {
+                console.error('Error generating PDF:', err);
+                alert('Gagal membuat PDF. Silakan coba lagi.');
+                document.body.removeChild(tempDiv);
+            });
+        }, 500);
+    }
+
+    // ==============================================================
+    // 10. TOGGLE BARCODE SELECT
+    // ==============================================================
     function toggleBarcodeSelect(id) {
         const checkbox = document.querySelector(`.barcode-check[data-id="${id}"]`);
         if (checkbox) {
@@ -2321,9 +2940,9 @@
         }
     }
 
-    // --------------------------------------------------------------
-    // 12. LOAD & SIMPAN DATA
-    // --------------------------------------------------------------
+    // ==============================================================
+    // 11. LOAD & SIMPAN DATA
+    // ==============================================================
     function loadData() {
         const stored = localStorage.getItem('absensiEkskul');
         if (stored) {
@@ -2333,7 +2952,9 @@
                     ...item,
                     status: item.status || 'Hadir',
                     lokasiStatus: item.lokasiStatus || 'Tidak Diketahui',
-                    metode: item.metode || 'Foto'
+                    metode: item.metode || 'Foto',
+                    lokasiNama: item.lokasiNama || null,
+                    faceVerified: item.faceVerified || false
                 }));
             } catch (e) {
                 absensiData = [];
@@ -2357,6 +2978,8 @@
                     status: 'Hadir',
                     lokasiStatus: 'Lokasi Benar',
                     metode: 'Foto',
+                    lokasiNama: 'SMK Negeri 1',
+                    faceVerified: true,
                     lastVerified: Date.now()
                 },
             ];
@@ -2406,6 +3029,15 @@
         renderAll();
         renderNotifications();
         renderSiswaList();
+        
+        setTimeout(() => {
+            updateCurrentLocationName();
+        }, 1000);
+        
+        // Load face models di background
+        setTimeout(() => {
+            loadFaceModels();
+        }, 2000);
     }
 
     function saveData() {
@@ -2418,9 +3050,9 @@
         localStorage.setItem('absensiLocation', JSON.stringify(locationSettings));
     }
 
-    // --------------------------------------------------------------
-    // 13. DEFAULT SISWA
-    // --------------------------------------------------------------
+    // ==============================================================
+    // 12. DEFAULT SISWA
+    // ==============================================================
     function loadDefaultSiswa() {
         siswaData = [
             { id: 1, nama: 'Ahmad Fauzi', kelas: 'X FASE E1', nis: 'TIK-001', foto: null },
@@ -2465,9 +3097,9 @@
         }
     }
 
-    // --------------------------------------------------------------
-    // 14. RENDER SISWA LIST DENGAN FOTO
-    // --------------------------------------------------------------
+    // ==============================================================
+    // 13. RENDER SISWA LIST
+    // ==============================================================
     function renderSiswaList(filter = '') {
         const list = document.getElementById('siswaList');
         const totalSpan = document.getElementById('totalSiswaDb');
@@ -2501,7 +3133,6 @@
         
         let html = '';
         filtered.forEach(s => {
-            // Foto dengan klik untuk preview
             const fotoElement = s.foto 
                 ? `<img src="${s.foto}" class="foto-circle" onclick="event.stopPropagation(); showFotoPreview('${s.foto}')" style="cursor:pointer;" title="Klik untuk perbesar" />`
                 : `<div class="foto-placeholder"><i class="fas fa-user"></i></div>`;
@@ -2545,9 +3176,9 @@
         showTambahSiswaModal(siswa);
     }
 
-    // --------------------------------------------------------------
-    // 15. MODAL SISWA
-    // --------------------------------------------------------------
+    // ==============================================================
+    // 14. MODAL SISWA
+    // ==============================================================
     function showTambahSiswaModal(siswa = null) {
         const modal = document.getElementById('tambahSiswaModal');
         const form = document.getElementById('tambahSiswaForm');
@@ -2632,9 +3263,9 @@
         alert('✅ Semua data siswa telah dihapus.');
     }
 
-    // --------------------------------------------------------------
-    // 16. RENDER ABSENSI
-    // --------------------------------------------------------------
+    // ==============================================================
+    // 15. RENDER ABSENSI
+    // ==============================================================
     function renderAll() {
         renderTable();
         updateStats();
@@ -2673,6 +3304,9 @@
             else if (item.metode === 'Foto') metodeBadge += ' foto';
             else metodeBadge += ' tidak-diketahui';
             
+            const lokasiDisplay = item.lokasiNama || item.lokasiStatus || 'Tidak Diketahui';
+            const faceStatus = item.faceVerified ? '✅' : '❌';
+            
             html += `
                 <tr>
                     <td>
@@ -2686,8 +3320,8 @@
                     <td>${escapeHtml(item.tanggal || item.waktu?.split(',')[0] || '-')}</td>
                     <td>${escapeHtml(item.jam || item.waktu?.split(',')[1]?.trim() || '-')}</td>
                     <td><span class="${metodeBadge}">${escapeHtml(item.metode || 'Foto')}</span></td>
-                    <td><span class="${lokasiBadge}">${escapeHtml(item.lokasiStatus || 'Tidak Diketahui')}</span></td>
-                    <td><span class="${statusBadge}">${escapeHtml(item.status)}</span></td>
+                    <td><span class="${lokasiBadge}">${escapeHtml(lokasiDisplay)}</span></td>
+                    <td><span class="${statusBadge}">${escapeHtml(item.status)} ${faceStatus}</span></td>
                     <td style="text-align:center;">
                         <button class="delete-btn" onclick="deleteSingleRecord(${item.id})" title="Hapus">
                             <i class="fas fa-trash-alt"></i>
@@ -2746,15 +3380,15 @@
         let html = '';
         todayNotif.forEach((notif, index) => {
             const isLokasiSalah = notif.type === 'lokasi_salah';
+            const isWajahTidakDikenal = notif.type === 'wajah_tidak_dikenal';
             const itemClass = isLokasiSalah ? 'notification-item lokasi-salah' : 'notification-item';
-            const iconClass = isLokasiSalah ? 'fas fa-map-marker-alt' : 'fas fa-exclamation-triangle';
+            const iconClass = isLokasiSalah ? 'fas fa-map-marker-alt' : (isWajahTidakDikenal ? 'fas fa-user-slash' : 'fas fa-exclamation-triangle');
             
             html += `
                 <div class="${itemClass}">
                     <span class="notif-icon"><i class="${iconClass}"></i></span>
                     <span class="notif-text">
-                        <strong>${escapeHtml(notif.nama)}</strong> (${escapeHtml(notif.kelas)}) 
-                        ${notif.message}
+                        <strong>${escapeHtml(notif.nama)}</strong> ${notif.message}
                     </span>
                     <span class="notif-time">${escapeHtml(notif.jam)}</span>
                     <button class="notif-action" onclick="removeNotification(${index})" title="Tandai selesai">
@@ -2776,9 +3410,9 @@
         return div.innerHTML;
     }
 
-    // --------------------------------------------------------------
-    // 17. CHECKBOX FUNCTIONS
-    // --------------------------------------------------------------
+    // ==============================================================
+    // 16. CHECKBOX FUNCTIONS
+    // ==============================================================
     function toggleAllCheckbox() {
         const checkboxes = document.querySelectorAll('.row-checkbox');
         const isChecked = selectAllCheckbox.checked;
@@ -2800,9 +3434,9 @@
         return Array.from(checkboxes).map(cb => parseInt(cb.dataset.id));
     }
 
-    // --------------------------------------------------------------
-    // 18. LOKASI FUNCTIONS
-    // --------------------------------------------------------------
+    // ==============================================================
+    // 17. LOKASI FUNCTIONS
+    // ==============================================================
     function getCurrentPosition() {
         return new Promise((resolve, reject) => {
             if (!navigator.geolocation) {
@@ -2836,24 +3470,14 @@
             locationSettings.lng = pos.lng;
             locationSettings.radius = parseInt(locationRadiusInput.value) || 100;
             
-            try {
-                const response = await fetch(
-                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.lat}&lon=${pos.lng}&zoom=18&addressdetails=1`
-                );
-                const data = await response.json();
-                if (data && data.display_name) {
-                    locationSettings.name = data.display_name.split(',')[0] || 'Lokasi Sekolah';
-                    schoolLocationInput.value = locationSettings.name;
-                } else {
-                    locationSettings.name = schoolLocationInput.value || 'Lokasi Sekolah';
-                }
-            } catch (e) {
-                locationSettings.name = schoolLocationInput.value || 'Lokasi Sekolah';
-            }
+            const name = await getLocationName(pos.lat, pos.lng);
+            locationSettings.name = name;
+            schoolLocationInput.value = name;
             
             saveLocationSettings();
             updateLocationStatus();
-            alert('✅ Lokasi berhasil diambil!');
+            await updateCurrentLocationName();
+            alert('✅ Lokasi berhasil diambil! Nama: ' + name);
         } catch (error) {
             alert('Gagal mengambil lokasi. Pastikan GPS aktif dan izin diberikan.\nError: ' + error.message);
         }
@@ -2870,7 +3494,7 @@
     function updateLocationStatus() {
         if (locationSettings.lat && locationSettings.lng) {
             locationStatus.className = 'location-status aktif';
-            locationStatus.innerHTML = `<i class="fas fa-circle"></i> Lokasi ter set (${locationSettings.radius}m)`;
+            locationStatus.innerHTML = `<i class="fas fa-circle"></i> Lokasi ter set: ${locationSettings.name || 'Lokasi Sekolah'} (${locationSettings.radius}m)`;
         } else {
             locationStatus.className = 'location-status nonaktif';
             locationStatus.innerHTML = `<i class="fas fa-circle"></i> Belum diset`;
@@ -2891,7 +3515,7 @@
 
     async function checkLocation() {
         if (!locationSettings.lat || !locationSettings.lng) {
-            return { status: 'Tidak Diketahui', distance: null };
+            return { status: 'Tidak Diketahui', distance: null, name: null };
         }
         
         try {
@@ -2901,20 +3525,22 @@
                 pos.lat, pos.lng
             );
             
+            const locationName = await getLocationName(pos.lat, pos.lng);
+            
             const radius = locationSettings.radius || 100;
             if (distance <= radius) {
-                return { status: 'Lokasi Benar', distance: distance };
+                return { status: 'Lokasi Benar', distance: distance, name: locationName };
             } else {
-                return { status: 'Lokasi Salah', distance: distance };
+                return { status: 'Lokasi Salah', distance: distance, name: locationName };
             }
         } catch (error) {
-            return { status: 'Tidak Diketahui', distance: null };
+            return { status: 'Tidak Diketahui', distance: null, name: null };
         }
     }
 
-    // --------------------------------------------------------------
-    // 19. TAMBAH ABSEN
-    // --------------------------------------------------------------
+    // ==============================================================
+    // 18. TAMBAH ABSEN DENGAN VERIFIKASI WAJAH
+    // ==============================================================
     async function tambahAbsen(metode = 'Foto') {
         const nama = namaInput.value.trim();
         const kelas = kelasSelect.value;
@@ -2928,6 +3554,58 @@
         if (metode === 'Foto' && !capturedPhotoData) {
             alert('Silakan ambil foto terlebih dahulu!');
             return;
+        }
+
+        // Verifikasi wajah jika metode Foto dan face verification tersedia
+        let faceVerified = false;
+        let faceStatus = 'Tidak Diverifikasi';
+        
+        if (metode === 'Foto' && isFaceModelLoaded) {
+            // Jika belum ada hasil verifikasi, lakukan verifikasi
+            if (!faceVerificationResult) {
+                await verifyFace(capturedPhotoData);
+            }
+            
+            if (faceVerificationResult) {
+                if (faceVerificationResult.match) {
+                    faceVerified = true;
+                    faceStatus = 'Wajah Cocok';
+                    // Pastikan nama sesuai dengan hasil verifikasi
+                    if (faceVerificationResult.siswa && nama !== faceVerificationResult.siswa.nama) {
+                        const konfirm = confirm(
+                            `⚠️ Nama yang dimasukkan (${nama}) tidak sesuai dengan hasil verifikasi wajah (${faceVerificationResult.siswa.nama}).\n` +
+                            `Apakah Anda ingin menggunakan nama dari verifikasi wajah?`
+                        );
+                        if (konfirm) {
+                            namaInput.value = faceVerificationResult.siswa.nama;
+                            const options = kelasSelect.options;
+                            for (let i = 0; i < options.length; i++) {
+                                if (options[i].value === faceVerificationResult.siswa.kelas) {
+                                    kelasSelect.selectedIndex = i;
+                                    break;
+                                }
+                            }
+                            // Re-ambil nama dan kelas
+                            const newNama = namaInput.value.trim();
+                            const newKelas = kelasSelect.value;
+                            // Lanjutkan proses dengan data baru
+                            return tambahAbsen(metode);
+                        }
+                    }
+                } else {
+                    // Wajah tidak cocok
+                    const konfirm = confirm(
+                        `⚠️ PERINGATAN: Wajah tidak dikenali!\n\n` +
+                        `Nama yang dimasukkan: ${nama}\n` +
+                        `Status: ${faceVerificationResult.reason || 'Tidak cocok'}\n\n` +
+                        `Apakah Anda tetap ingin melanjutkan absen?`
+                    );
+                    if (!konfirm) {
+                        return;
+                    }
+                    faceStatus = 'Wajah Tidak Cocok';
+                }
+            }
         }
 
         const today = new Date().toLocaleDateString('id-ID', {
@@ -2956,15 +3634,34 @@
         const locationResult = await checkLocation();
         let status = 'Hadir';
         let lokasiStatus = locationResult.status;
+        let lokasiNama = locationResult.name || null;
         let notificationType = null;
         let notificationMessage = '';
 
         if (lokasiStatus === 'Lokasi Salah') {
             status = 'Mencurigakan';
             notificationType = 'lokasi_salah';
-            notificationMessage = `melakukan absen dari lokasi yang tidak sesuai (jarak ${Math.round(locationResult.distance)}m dari lokasi sekolah).`;
+            notificationMessage = `melakukan absen dari lokasi yang tidak sesuai (jarak ${Math.round(locationResult.distance)}m dari lokasi sekolah). Lokasi: ${lokasiNama || 'Tidak diketahui'}`;
         } else if (lokasiStatus === 'Tidak Diketahui') {
             notificationMessage = 'melakukan absen tanpa data lokasi (GPS tidak aktif).';
+        }
+
+        // Tambahkan notifikasi jika wajah tidak cocok
+        if (metode === 'Foto' && faceVerificationResult && !faceVerificationResult.match) {
+            const notifMsg = `wajah tidak cocok dengan data ${nama} di database.`;
+            notifications.push({
+                id: Date.now() + Math.random(),
+                nama: nama,
+                kelas: kelas,
+                tanggal: tanggal,
+                jam: jam,
+                message: notifMsg,
+                type: 'wajah_tidak_dikenal',
+                status: 'Mencurigakan'
+            });
+            if (notifications.length > 100) {
+                notifications = notifications.slice(-100);
+            }
         }
 
         const newRecord = {
@@ -2976,12 +3673,15 @@
             fotoBase64: metode === 'Foto' ? capturedPhotoData : '',
             status: status,
             lokasiStatus: lokasiStatus,
+            lokasiNama: lokasiNama,
             lokasi: locationResult.distance !== null ? {
                 lat: locationSettings.lat,
                 lng: locationSettings.lng,
                 distance: locationResult.distance
             } : null,
             metode: metode,
+            faceVerified: faceVerified,
+            faceStatus: faceStatus,
             lastVerified: now
         };
 
@@ -3005,7 +3705,7 @@
             }
             saveData();
             renderNotifications();
-            alert(`⚠️ Peringatan: ${nama} melakukan absen dari lokasi yang tidak sesuai!\nJarak: ${Math.round(locationResult.distance)}m dari lokasi sekolah.`);
+            alert(`⚠️ Peringatan: ${nama} melakukan absen dari lokasi yang tidak sesuai!\nLokasi: ${lokasiNama || 'Tidak diketahui'}\nJarak: ${Math.round(locationResult.distance)}m dari lokasi sekolah.`);
         }
 
         if (metode === 'Foto') {
@@ -3014,10 +3714,13 @@
             capturedImg.src = '';
             photoStatus.textContent = 'Foto berhasil disimpan ✅';
             photoStatus.style.color = '#1f9d5a';
+            faceResult.classList.remove('show', 'match', 'unmatch', 'loading');
+            faceVerificationResult = null;
             refreshCamera();
         }
 
         renderAll();
+        renderNotifications();
         alert(`✅ Absensi berhasil untuk ${nama} (${metode})`);
     }
 
@@ -3030,9 +3733,9 @@
         }
     });
 
-    // --------------------------------------------------------------
-    // 20. NOTIFICATION FUNCTIONS
-    // --------------------------------------------------------------
+    // ==============================================================
+    // 19. NOTIFICATION FUNCTIONS
+    // ==============================================================
     function removeNotification(index) {
         const today = new Date().toLocaleDateString('id-ID', {
             day: '2-digit', month: '2-digit', year: 'numeric'
@@ -3049,9 +3752,9 @@
         }
     }
 
-    // --------------------------------------------------------------
-    // 21. HAPUS FUNCTIONS
-    // --------------------------------------------------------------
+    // ==============================================================
+    // 20. HAPUS FUNCTIONS
+    // ==============================================================
     function deleteSingleRecord(id) {
         const record = absensiData.find(item => item.id === id);
         if (!record) return;
@@ -3116,15 +3819,15 @@
         }
     });
 
-    // --------------------------------------------------------------
-    // 22. EXPORT CSV
-    // --------------------------------------------------------------
+    // ==============================================================
+    // 21. EXPORT CSV
+    // ==============================================================
     function exportCSV() {
         if (absensiData.length === 0) {
             alert('Tidak ada data untuk diexport.');
             return;
         }
-        let csv = 'No,Nama,Kelas,Tanggal,Jam,Metode,Lokasi,Status\n';
+        let csv = 'No,Nama,Kelas,Tanggal,Jam,Metode,Lokasi,Status,Verifikasi Wajah\n';
         absensiData.forEach((item, idx) => {
             const row = [
                 idx + 1,
@@ -3133,8 +3836,9 @@
                 `"${item.tanggal || item.waktu?.split(',')[0] || '-'}"`,
                 `"${item.jam || item.waktu?.split(',')[1]?.trim() || '-'}"`,
                 `"${item.metode || 'Foto'}"`,
-                `"${item.lokasiStatus || 'Tidak Diketahui'}"`,
-                `"${item.status}"`
+                `"${item.lokasiNama || item.lokasiStatus || 'Tidak Diketahui'}"`,
+                `"${item.status}"`,
+                `"${item.faceVerified ? '✅ Cocok' : '❌ Tidak Diverifikasi'}"`
             ];
             csv += row.join(',') + '\n';
         });
@@ -3149,19 +3853,29 @@
         URL.revokeObjectURL(link.href);
     }
 
-    // --------------------------------------------------------------
-    // 23. INIT
-    // --------------------------------------------------------------
+    // ==============================================================
+    // 22. INIT
+    // ==============================================================
     (function init() {
         loadData();
         startCamera();
         updateLocationStatus();
+        setScanMode('auto');
         
-        document.querySelector('.tab-btn[data-tab="tabBarcode"]').addEventListener('click', function() {
-            if (!isScanning) {
-                setTimeout(startBarcodeScan, 500);
-            }
-        });
+        setTimeout(() => {
+            updateCurrentLocationName();
+        }, 1500);
+        
+        // Load face models
+        setTimeout(() => {
+            loadFaceModels().then(loaded => {
+                if (loaded) {
+                    console.log('Face models loaded successfully');
+                } else {
+                    console.warn('Face models failed to load');
+                }
+            });
+        }, 2000);
     })();
 </script>
 

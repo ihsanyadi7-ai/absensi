@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Absensi Ekskul Komputer</title>
     <!-- Font Awesome & Google Font -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
@@ -16,9 +16,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <!-- jsPDF untuk export PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- face-api.js untuk deteksi wajah -->
-    <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <style>
+        /* ============================================================
+           STYLE UTAMA
+           ============================================================ */
         * {
             margin: 0;
             padding: 0;
@@ -145,6 +146,7 @@
             background: #138496;
         }
 
+        /* Tabs */
         .tabs {
             display: flex;
             gap: 8px;
@@ -184,6 +186,7 @@
             display: block;
         }
 
+        /* Statistik */
         .stats {
             display: flex;
             flex-wrap: wrap;
@@ -247,6 +250,100 @@
 
         #canvas, #scanCanvas {
             display: none;
+        }
+
+        /* Scanning overlay - barcode frame */
+        .scan-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 2;
+        }
+        .scan-overlay .scan-frame {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70%;
+            height: 70%;
+            max-width: 300px;
+            max-height: 300px;
+            border: 3px solid rgba(31, 157, 90, 0.8);
+            border-radius: 12px;
+            box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.4);
+        }
+        .scan-overlay .scan-frame::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            width: 30px;
+            height: 30px;
+            border-top: 4px solid #1f9d5a;
+            border-left: 4px solid #1f9d5a;
+            border-radius: 4px 0 0 0;
+        }
+        .scan-overlay .scan-frame::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 30px;
+            height: 30px;
+            border-top: 4px solid #1f9d5a;
+            border-right: 4px solid #1f9d5a;
+            border-radius: 0 4px 0 0;
+        }
+        .scan-overlay .scan-frame .scan-corner-bl {
+            position: absolute;
+            bottom: -2px;
+            left: -2px;
+            width: 30px;
+            height: 30px;
+            border-bottom: 4px solid #1f9d5a;
+            border-left: 4px solid #1f9d5a;
+            border-radius: 0 0 0 4px;
+        }
+        .scan-overlay .scan-frame .scan-corner-br {
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            width: 30px;
+            height: 30px;
+            border-bottom: 4px solid #1f9d5a;
+            border-right: 4px solid #1f9d5a;
+            border-radius: 0 0 4px 0;
+        }
+        .scan-overlay .scan-line {
+            position: absolute;
+            top: 50%;
+            left: 15%;
+            width: 70%;
+            height: 3px;
+            background: linear-gradient(to right, transparent, #1f9d5a, transparent);
+            transform: translateY(-50%);
+            animation: scanLine 2s ease-in-out infinite;
+        }
+        .scan-overlay .scan-text {
+            position: absolute;
+            bottom: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 0.8rem;
+            text-align: center;
+            background: rgba(0,0,0,0.5);
+            padding: 6px 16px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+
+        @keyframes scanLine {
+            0%, 100% { top: 20%; }
+            50% { top: 80%; }
         }
 
         .capture-tools {
@@ -900,12 +997,6 @@
         .notification-item .notif-actions .notif-hapus:hover {
             background: #fee8e8;
         }
-        .notification-item .notif-actions .notif-ignore {
-            color: #526b8a;
-        }
-        .notification-item .notif-actions .notif-ignore:hover {
-            background: #e9eff6;
-        }
         .no-notification {
             text-align: center;
             color: #8195af;
@@ -1256,14 +1347,17 @@
             border: 4px solid white;
         }
 
+        /* Scan Mode Toggle */
         .scan-mode-toggle {
             display: flex;
             gap: 8px;
             margin-bottom: 12px;
+            flex-wrap: wrap;
         }
         .scan-mode-toggle .btn {
             flex: 1;
             justify-content: center;
+            min-width: 80px;
         }
         .scan-mode-toggle .btn.active {
             background: #6f42c1;
@@ -1290,6 +1384,23 @@
             color: #9e2a2a;
             border: 1px solid #d14c4c;
         }
+        .scan-status.waiting {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #e6a020;
+        }
+
+        .scan-tools {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 8px;
+        }
+        .scan-tools .btn {
+            padding: 6px 14px;
+            font-size: 0.8rem;
+        }
 
         .location-info {
             display: flex;
@@ -1314,23 +1425,54 @@
             to { transform: translateY(0); opacity: 1; }
         }
 
+        /* ============================================================
+           RESPONSIVE MOBILE
+           ============================================================ */
         @media (max-width: 640px) {
-            .header h1 { font-size: 1.6rem; }
-            .stats .card-stat { flex: 1 1 120px; }
-            .modal-box { padding: 25px 20px; }
+            .header h1 { font-size: 1.4rem; }
+            .stats .card-stat { flex: 1 1 100px; padding: 12px 16px; }
+            .stats .card-stat h3 { font-size: 1.5rem; }
+            .modal-box { padding: 20px; }
             .table-actions { width: 100%; }
             .notification-panel { padding: 15px; }
             .location-settings .location-row { flex-direction: column; align-items: stretch; }
-            .tab-btn { padding: 8px 14px; font-size: 0.8rem; }
+            .tab-btn { padding: 8px 12px; font-size: 0.75rem; }
             .db-actions { flex-direction: column; }
             .print-controls { flex-direction: column; }
             .barcode-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
             .siswa-item { flex-direction: column; align-items: flex-start; gap: 8px; }
             .siswa-item .actions { align-self: flex-end; }
-            .scan-mode-toggle { flex-direction: column; }
+            .scan-mode-toggle { flex-direction: row; }
+            .scan-mode-toggle .btn { flex: 1; font-size: 0.8rem; padding: 8px 10px; }
             .location-info { font-size: 0.7rem; padding: 4px 8px; }
             .face-result { flex-direction: column; text-align: center; }
             .notification-item { flex-wrap: wrap; }
+            .camera-wrapper { gap: 15px; }
+            .video-box { flex: 1 1 100%; }
+            .capture-tools .btn { padding: 8px 12px; font-size: 0.8rem; }
+            .scan-overlay .scan-frame { width: 80%; height: 65%; max-width: 250px; max-height: 250px; }
+            .scan-overlay .scan-text { font-size: 0.7rem; padding: 4px 12px; bottom: 8%; }
+            .form-box { padding: 14px 16px; }
+            .btn-absen { padding: 12px; font-size: 1rem; }
+            .scan-tools .btn { padding: 4px 10px; font-size: 0.7rem; }
+        }
+
+        @media (max-width: 400px) {
+            .header h1 { font-size: 1.2rem; }
+            .header h1 i { margin-right: 4px; }
+            .btn { padding: 6px 12px; font-size: 0.8rem; }
+            .tab-btn { padding: 6px 8px; font-size: 0.65rem; }
+            .stats .card-stat { padding: 8px 12px; }
+            .stats .card-stat h3 { font-size: 1.2rem; }
+            .scan-overlay .scan-frame { width: 85%; height: 60%; max-width: 200px; max-height: 200px; }
+        }
+
+        /* Landscape mode untuk HP */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .video-box { max-height: 50vh; }
+            .scan-overlay .scan-frame { width: 50%; height: 70%; max-width: 200px; max-height: 200px; }
+            .camera-wrapper { flex-direction: row; }
+            .form-box { flex: 1 1 200px; }
         }
     </style>
 </head>
@@ -1365,7 +1507,7 @@
         <button class="tab-btn" data-tab="tabRiwayat"><i class="fas fa-history"></i> Riwayat</button>
     </div>
 
-    <!-- Tab 1: Absen dengan Foto + Deteksi Wajah -->
+    <!-- Tab 1: Absen dengan Foto -->
     <div id="tabAbsen" class="tab-content active">
         <div class="camera-section">
             <div class="camera-wrapper">
@@ -1466,11 +1608,35 @@
                 <div class="video-box" id="scanVideoBox">
                     <video id="scanVideo" autoplay muted></video>
                     <canvas id="scanCanvas" style="display:none;"></canvas>
+                    <!-- Scan Overlay -->
+                    <div class="scan-overlay" id="scanOverlay" style="display:none;">
+                        <div class="scan-frame">
+                            <span class="scan-corner-bl"></span>
+                            <span class="scan-corner-br"></span>
+                            <div class="scan-line"></div>
+                        </div>
+                        <div class="scan-text">Arahkan ke Barcode</div>
+                    </div>
                     <div class="capture-tools">
                         <button class="btn btn-primary" id="startScanBtn"><i class="fas fa-play"></i> Mulai Scan</button>
                         <button class="btn btn-danger" id="stopScanBtn"><i class="fas fa-stop"></i> Berhenti</button>
                         <button class="btn btn-outline" id="refreshScanBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
                         <button class="btn btn-success" id="captureScanBtn"><i class="fas fa-camera"></i> Ambil Foto</button>
+                    </div>
+                    <!-- Scan Tools untuk HP -->
+                    <div class="scan-tools" id="scanTools" style="display:none;">
+                        <button class="btn btn-warning" id="torchBtn" onclick="toggleTorch()">
+                            <i class="fas fa-lightbulb"></i> Lampu
+                        </button>
+                        <button class="btn btn-outline" id="zoomInBtn" onclick="zoomIn()">
+                            <i class="fas fa-search-plus"></i>
+                        </button>
+                        <button class="btn btn-outline" id="zoomOutBtn" onclick="zoomOut()">
+                            <i class="fas fa-search-minus"></i>
+                        </button>
+                        <button class="btn btn-outline" id="switchCamBtn" onclick="switchCamera()">
+                            <i class="fas fa-sync-alt"></i> Ganti Kamera
+                        </button>
                     </div>
                 </div>
 
@@ -1794,6 +1960,8 @@
     const refreshScanBtn = document.getElementById('refreshScanBtn');
     const captureScanBtn = document.getElementById('captureScanBtn');
     const scanStatus = document.getElementById('scanStatus');
+    const scanOverlay = document.getElementById('scanOverlay');
+    const scanTools = document.getElementById('scanTools');
 
     // Barcode result
     const barcodeResult = document.getElementById('barcodeResult');
@@ -1857,6 +2025,9 @@
     let isFaceModelLoaded = false;
     let faceVerificationResult = null;
     let isFaceVerifying = false;
+    let currentCameraFacing = 'environment';
+    let torchActive = false;
+    let currentZoom = 1;
 
     let locationSettings = {
         lat: null,
@@ -1917,10 +2088,7 @@
         photoStatus.textContent = 'Foto berhasil diambil ✅';
         photoStatus.style.color = '#1f9d5a';
         
-        // Disable absen button dulu
         absenBtn.disabled = true;
-        
-        // Lakukan verifikasi wajah
         verifyFace(capturedPhotoData);
     }
 
@@ -1937,6 +2105,330 @@
 
     captureBtn.addEventListener('click', capturePhoto);
     refreshCamBtn.addEventListener('click', refreshCamera);
+
+    // ==============================================================
+    // SCAN BARCODE - DIPERBAIKI UNTUK HP
+    // ==============================================================
+    let torchStream = null;
+
+    function toggleTorch() {
+        if (!scanStream) return;
+        
+        const track = scanStream.getVideoTracks()[0];
+        if (!track) return;
+        
+        try {
+            // Coba menggunakan torch/light
+            const capabilities = track.getCapabilities();
+            if (capabilities.torch) {
+                torchActive = !torchActive;
+                track.applyConstraints({ advanced: [{ torch: torchActive }] });
+                document.getElementById('torchBtn').classList.toggle('btn-warning');
+                document.getElementById('torchBtn').classList.toggle('btn-primary');
+                document.getElementById('torchBtn').innerHTML = torchActive ? 
+                    '<i class="fas fa-lightbulb"></i> Lampu ON' : 
+                    '<i class="fas fa-lightbulb"></i> Lampu';
+            } else {
+                alert('Perangkat tidak mendukung lampu kilat/flash.');
+            }
+        } catch (e) {
+            alert('Gagal mengaktifkan lampu: ' + e.message);
+        }
+    }
+
+    function zoomIn() {
+        if (!scanStream) return;
+        const track = scanStream.getVideoTracks()[0];
+        if (!track) return;
+        
+        try {
+            const capabilities = track.getCapabilities();
+            if (capabilities.zoom) {
+                currentZoom = Math.min(currentZoom + 0.2, capabilities.zoom.max || 4);
+                track.applyConstraints({ advanced: [{ zoom: currentZoom }] });
+            }
+        } catch (e) {
+            console.log('Zoom tidak didukung');
+        }
+    }
+
+    function zoomOut() {
+        if (!scanStream) return;
+        const track = scanStream.getVideoTracks()[0];
+        if (!track) return;
+        
+        try {
+            const capabilities = track.getCapabilities();
+            if (capabilities.zoom) {
+                currentZoom = Math.max(currentZoom - 0.2, capabilities.zoom.min || 1);
+                track.applyConstraints({ advanced: [{ zoom: currentZoom }] });
+            }
+        } catch (e) {
+            console.log('Zoom tidak didukung');
+        }
+    }
+
+    function switchCamera() {
+        if (isScanning) {
+            stopScan();
+            setTimeout(() => {
+                currentCameraFacing = currentCameraFacing === 'environment' ? 'user' : 'environment';
+                startScan();
+            }, 300);
+        }
+    }
+
+    function setScanMode(mode) {
+        scanMode = mode;
+        document.querySelectorAll('.scan-mode-toggle .btn').forEach(b => b.classList.remove('active'));
+        if (mode === 'auto') {
+            modeAutoBtn.classList.add('active');
+            scanStatus.className = 'scan-status';
+            scanStatus.innerHTML = '<i class="fas fa-info-circle"></i> Mode Auto. Mendukung semua format barcode/QR Code.';
+        } else {
+            modeBarcodeBtn.classList.add('active');
+            scanStatus.className = 'scan-status';
+            scanStatus.innerHTML = '<i class="fas fa-info-circle"></i> Mode Barcode. Khusus untuk barcode CODE128/EAN.';
+        }
+        barcodeResult.classList.remove('show');
+        scannedBarcode = null;
+        if (isScanning) {
+            stopScan();
+            setTimeout(startScan, 500);
+        }
+    }
+
+    async function startScan() {
+        try {
+            // Reset status
+            scanStatus.className = 'scan-status waiting';
+            scanStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengakses kamera...';
+            scanOverlay.style.display = 'none';
+            scanTools.style.display = 'none';
+            
+            // Cek izin kamera
+            try {
+                const permissionStatus = await navigator.permissions.query({ name: 'camera' });
+                if (permissionStatus.state === 'denied') {
+                    scanStatus.className = 'scan-status error';
+                    scanStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Izin kamera ditolak. Silakan izinkan akses kamera di pengaturan browser.';
+                    alert('⚠️ Izin kamera ditolak!\n\nSilakan izinkan akses kamera di pengaturan browser Anda.');
+                    return;
+                }
+            } catch (e) {
+                // Permissions API tidak didukung, lanjutkan
+            }
+
+            // Matikan stream sebelumnya
+            if (scanStream) {
+                scanStream.getTracks().forEach(t => t.stop());
+                scanStream = null;
+            }
+            
+            // Deteksi apakah perangkat mobile
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            // Konfigurasi untuk HP
+            const constraints = {
+                video: { 
+                    facingMode: currentCameraFacing,
+                    width: { ideal: isMobile ? 1280 : 640 },
+                    height: { ideal: isMobile ? 720 : 480 },
+                    aspectRatio: { ideal: 4/3 }
+                },
+                audio: false
+            };
+            
+            // Untuk HP, tambahkan opsi frame rate yang lebih rendah untuk performa
+            if (isMobile) {
+                constraints.video.frameRate = { ideal: 30, max: 60 };
+            }
+            
+            scanStream = await navigator.mediaDevices.getUserMedia(constraints);
+            
+            // Hubungkan ke video element
+            scanVideo.srcObject = scanStream;
+            await scanVideo.play();
+            
+            isScanning = true;
+            scanStatus.className = 'scan-status active';
+            scanStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Scanning... Arahkan ke barcode/QR Code';
+            scanOverlay.style.display = 'block';
+            scanTools.style.display = 'flex';
+            
+            // Reset torch jika sebelumnya aktif
+            torchActive = false;
+            document.getElementById('torchBtn').classList.remove('btn-primary');
+            document.getElementById('torchBtn').classList.add('btn-warning');
+            document.getElementById('torchBtn').innerHTML = '<i class="fas fa-lightbulb"></i> Lampu';
+            
+            barcodeResult.classList.remove('show');
+            scannedBarcode = null;
+            
+            if (barcodeReader) {
+                barcodeReader = null;
+            }
+            
+            // Inisialisasi barcode reader dengan format yang sesuai
+            const hints = new Map();
+            if (scanMode === 'barcode') {
+                // Hanya barcode format tertentu
+                const formats = [
+                    ZXing.BarcodeFormat.CODE_128,
+                    ZXing.BarcodeFormat.CODE_39,
+                    ZXing.BarcodeFormat.CODE_93,
+                    ZXing.BarcodeFormat.EAN_13,
+                    ZXing.BarcodeFormat.EAN_8,
+                    ZXing.BarcodeFormat.UPC_A,
+                    ZXing.BarcodeFormat.UPC_E,
+                    ZXing.BarcodeFormat.ITF
+                ];
+                hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
+            }
+            
+            barcodeReader = new ZXing.BrowserMultiFormatReader(hints);
+            barcodeReader.decodeFromVideoElement(scanVideo, (result, err) => {
+                if (result) {
+                    const text = result.getText();
+                    scannedBarcode = text;
+                    barcodeValue.textContent = text;
+                    barcodeResult.classList.add('show');
+                    scanStatus.className = 'scan-status active';
+                    scanStatus.innerHTML = '<i class="fas fa-check-circle" style="color:#1f9d5a;"></i> Barcode terdeteksi!';
+                    scanOverlay.style.display = 'none';
+                    
+                    const siswa = siswaData.find(s => s.nis === text);
+                    if (siswa) {
+                        scanStatus.innerHTML = `<i class="fas fa-check-circle" style="color:#1f9d5a;"></i> ✅ Siswa ditemukan: ${siswa.nama} (${siswa.kelas})`;
+                        namaInput.value = siswa.nama;
+                        const options = kelasSelect.options;
+                        for (let i = 0; i < options.length; i++) {
+                            if (options[i].value === siswa.kelas) {
+                                kelasSelect.selectedIndex = i;
+                                break;
+                            }
+                        }
+                    } else {
+                        scanStatus.innerHTML = `<i class="fas fa-exclamation-triangle" style="color:#e6a020;"></i> ⚠️ Siswa dengan NIS "${text}" tidak ditemukan di database.`;
+                    }
+                    
+                    // Berhenti scan setelah berhasil
+                    stopScan();
+                }
+            });
+            
+        } catch (err) {
+            console.error('Scan error:', err);
+            scanStatus.className = 'scan-status error';
+            scanOverlay.style.display = 'none';
+            scanTools.style.display = 'none';
+            
+            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                scanStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Izin kamera ditolak. Silakan izinkan akses kamera.';
+                alert('⚠️ Izin kamera ditolak!\n\nSilakan izinkan akses kamera di pengaturan browser Anda.');
+            } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                scanStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Kamera tidak ditemukan. Pastikan perangkat Anda memiliki kamera.';
+                alert('⚠️ Kamera tidak ditemukan!\n\nPastikan perangkat Anda memiliki kamera yang terhubung.');
+            } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+                scanStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Kamera sedang digunakan oleh aplikasi lain.';
+                alert('⚠️ Kamera sedang digunakan!\n\nTutup aplikasi lain yang menggunakan kamera.');
+            } else {
+                scanStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Gagal mengakses kamera: ' + err.message;
+                alert('Gagal mengakses kamera.\nError: ' + err.message);
+            }
+            isScanning = false;
+        }
+    }
+
+    function stopScan() {
+        if (barcodeReader) {
+            try {
+                barcodeReader.reset();
+                barcodeReader = null;
+            } catch(e) {}
+        }
+        
+        if (scanStream) {
+            scanStream.getTracks().forEach(t => t.stop());
+            scanStream = null;
+        }
+        scanVideo.srcObject = null;
+        isScanning = false;
+        scanOverlay.style.display = 'none';
+        scanTools.style.display = 'none';
+        torchActive = false;
+        
+        scanStatus.className = 'scan-status';
+        if (!barcodeResult.classList.contains('show')) {
+            scanStatus.innerHTML = '<i class="fas fa-info-circle"></i> Scan dihentikan. Klik "Mulai Scan" untuk memulai.';
+        }
+    }
+
+    function refreshScan() {
+        if (isScanning) {
+            stopScan();
+            setTimeout(startScan, 500);
+        } else {
+            scanStatus.className = 'scan-status';
+            scanStatus.innerHTML = '<i class="fas fa-info-circle"></i> Klik "Mulai Scan" untuk mengaktifkan kamera';
+        }
+    }
+
+    startScanBtn.addEventListener('click', startScan);
+    stopScanBtn.addEventListener('click', stopScan);
+    refreshScanBtn.addEventListener('click', refreshScan);
+
+    captureScanBtn.addEventListener('click', function() {
+        if (!scanVideo.videoWidth || !scanVideo.videoHeight) {
+            alert('Video belum siap. Mulai scan terlebih dahulu.');
+            return;
+        }
+        scanCanvas.width = scanVideo.videoWidth;
+        scanCanvas.height = scanVideo.videoHeight;
+        const ctx = scanCanvas.getContext('2d');
+        ctx.drawImage(scanVideo, 0, 0, scanCanvas.width, scanCanvas.height);
+        const dataUrl = scanCanvas.toDataURL('image/jpeg', 0.85);
+        capturedPhotoData = dataUrl;
+        capturedImg.src = dataUrl;
+        photoStatus.textContent = 'Foto dari scan berhasil diambil ✅';
+        photoStatus.style.color = '#1f9d5a';
+        document.querySelector('.tab-btn[data-tab="tabAbsen"]').click();
+        verifyFace(dataUrl);
+        alert('✅ Foto berhasil diambil dari scan! Silakan lanjutkan absen.');
+    });
+
+    function absenFromScan() {
+        if (scannedBarcode) {
+            const siswa = siswaData.find(s => s.nis === scannedBarcode);
+            if (siswa) {
+                namaInput.value = siswa.nama;
+                const options = kelasSelect.options;
+                for (let i = 0; i < options.length; i++) {
+                    if (options[i].value === siswa.kelas) {
+                        kelasSelect.selectedIndex = i;
+                        break;
+                    }
+                }
+                document.querySelector('.tab-btn[data-tab="tabAbsen"]').click();
+                setTimeout(() => {
+                    absenBtn.click();
+                }, 300);
+            } else {
+                alert('Siswa dengan NIS "' + scannedBarcode + '" tidak ditemukan di database.');
+            }
+        } else {
+            alert('Tidak ada hasil scan. Silakan scan barcode terlebih dahulu.');
+        }
+    }
+
+    function clearScanResult() {
+        barcodeResult.classList.remove('show');
+        scannedBarcode = null;
+        if (!isScanning) {
+            scanStatus.className = 'scan-status';
+            scanStatus.innerHTML = '<i class="fas fa-info-circle"></i> Hasil scan dibersihkan.';
+        }
+    }
 
     // ==============================================================
     // FACE DETECTION & VERIFICATION
@@ -1975,7 +2467,6 @@
             }
         }
 
-        // Tampilkan loading
         faceResult.className = 'face-result show loading';
         faceIcon.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
         faceText.textContent = 'Memverifikasi wajah...';
@@ -1993,7 +2484,6 @@
             ).withFaceLandmarks().withFaceDescriptors();
 
             if (detections.length === 0) {
-                // Tidak ada wajah terdeteksi
                 faceResult.className = 'face-result show unmatch';
                 faceIcon.innerHTML = '<i class="fas fa-user-slash"></i>';
                 faceText.textContent = '❌ TIDAK ADA WAJAH TERDETEKSI';
@@ -2004,11 +2494,9 @@
                 return;
             }
 
-            // Bandingkan dengan foto siswa di database
             const matchedStudent = await findMatchingFace(detections[0].descriptor);
 
             if (matchedStudent) {
-                // Wajah cocok
                 faceResult.className = 'face-result show match';
                 faceIcon.innerHTML = '<i class="fas fa-user-check"></i>';
                 faceText.textContent = `✅ WAJAH COCOK: ${matchedStudent.nama}`;
@@ -2016,7 +2504,6 @@
                 faceVerificationResult = { match: true, siswa: matchedStudent };
                 absenBtn.disabled = false;
                 
-                // Auto isi nama
                 namaInput.value = matchedStudent.nama;
                 const options = kelasSelect.options;
                 for (let i = 0; i < options.length; i++) {
@@ -2026,7 +2513,6 @@
                     }
                 }
             } else {
-                // Wajah tidak cocok
                 faceResult.className = 'face-result show unmatch';
                 faceIcon.innerHTML = '<i class="fas fa-user-slash"></i>';
                 faceText.textContent = '❌ ORANG TIDAK DIKENAL';
@@ -2034,7 +2520,6 @@
                 faceVerificationResult = { match: false, siswa: null, reason: 'Unknown person' };
                 absenBtn.disabled = true;
                 
-                // Tambahkan notifikasi
                 const today = new Date().toLocaleDateString('id-ID', {
                     day: '2-digit', month: '2-digit', year: 'numeric'
                 });
@@ -2044,7 +2529,6 @@
                 
                 const nama = namaInput.value.trim() || 'Tidak diketahui';
                 
-                // Cek apakah notifikasi sudah ada untuk hari ini
                 const existingNotif = notifications.some(n => 
                     n.type === 'wajah_tidak_dikenal' && 
                     n.tanggal === today &&
@@ -2070,7 +2554,6 @@
                     renderNotifications();
                 }
                 
-                // Alert peringatan
                 alert('⚠️ PERINGATAN: WAJAH TIDAK DIKENALI!\n\nWajah yang diambil tidak cocok dengan data siswa di database.\n\nSilakan:\n1. Pastikan siswa sudah terdaftar di database\n2. Upload foto siswa di menu Database Siswa\n3. Coba ambil foto dengan pencahayaan yang lebih baik');
             }
 
@@ -2165,179 +2648,6 @@
             updateCurrentLocationName();
         }
     }, 30000);
-
-    // ==============================================================
-    // SCAN BARCODE
-    // ==============================================================
-    function setScanMode(mode) {
-        scanMode = mode;
-        document.querySelectorAll('.scan-mode-toggle .btn').forEach(b => b.classList.remove('active'));
-        if (mode === 'auto') {
-            modeAutoBtn.classList.add('active');
-            scanStatus.innerHTML = '<i class="fas fa-info-circle"></i> Mode Auto. Mendukung semua format barcode/QR Code.';
-        } else {
-            modeBarcodeBtn.classList.add('active');
-            scanStatus.innerHTML = '<i class="fas fa-info-circle"></i> Mode Barcode. Khusus untuk barcode CODE128/EAN.';
-        }
-        barcodeResult.classList.remove('show');
-        scannedBarcode = null;
-        if (isScanning) {
-            stopScan();
-            setTimeout(startScan, 500);
-        }
-    }
-
-    async function startScan() {
-        try {
-            if (scanStream) {
-                scanStream.getTracks().forEach(t => t.stop());
-                scanStream = null;
-            }
-            
-            scanStream = await navigator.mediaDevices.getUserMedia({
-                video: { 
-                    facingMode: 'environment',
-                    width: { ideal: 640 },
-                    height: { ideal: 480 }
-                }
-            });
-            scanVideo.srcObject = scanStream;
-            await scanVideo.play();
-            
-            isScanning = true;
-            scanStatus.className = 'scan-status active';
-            scanStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Scanning... Arahkan ke barcode/QR Code';
-            
-            barcodeResult.classList.remove('show');
-            scannedBarcode = null;
-            
-            if (barcodeReader) {
-                barcodeReader = null;
-            }
-            
-            barcodeReader = new ZXing.BrowserMultiFormatReader();
-            barcodeReader.decodeFromVideoElement(scanVideo, (result, err) => {
-                if (result) {
-                    const text = result.getText();
-                    scannedBarcode = text;
-                    barcodeValue.textContent = text;
-                    barcodeResult.classList.add('show');
-                    scanStatus.className = 'scan-status active';
-                    scanStatus.innerHTML = '<i class="fas fa-check-circle" style="color:#1f9d5a;"></i> Barcode terdeteksi!';
-                    
-                    const siswa = siswaData.find(s => s.nis === text);
-                    if (siswa) {
-                        scanStatus.innerHTML = `<i class="fas fa-check-circle" style="color:#1f9d5a;"></i> ✅ Siswa ditemukan: ${siswa.nama} (${siswa.kelas})`;
-                        namaInput.value = siswa.nama;
-                        const options = kelasSelect.options;
-                        for (let i = 0; i < options.length; i++) {
-                            if (options[i].value === siswa.kelas) {
-                                kelasSelect.selectedIndex = i;
-                                break;
-                            }
-                        }
-                    } else {
-                        scanStatus.innerHTML = `<i class="fas fa-exclamation-triangle" style="color:#e6a020;"></i> ⚠️ Siswa dengan NIS "${text}" tidak ditemukan di database.`;
-                    }
-                    
-                    stopScan();
-                }
-            });
-            
-        } catch (err) {
-            scanStatus.className = 'scan-status error';
-            scanStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Gagal mengakses kamera: ' + err.message;
-            isScanning = false;
-            alert('Gagal mengakses kamera. Pastikan izin kamera diberikan.\nError: ' + err.message);
-        }
-    }
-
-    function stopScan() {
-        if (barcodeReader) {
-            try {
-                barcodeReader.reset();
-                barcodeReader = null;
-            } catch(e) {}
-        }
-        
-        if (scanStream) {
-            scanStream.getTracks().forEach(t => t.stop());
-            scanStream = null;
-        }
-        scanVideo.srcObject = null;
-        isScanning = false;
-        
-        scanStatus.className = 'scan-status';
-        if (!barcodeResult.classList.contains('show')) {
-            scanStatus.innerHTML = '<i class="fas fa-info-circle"></i> Scan dihentikan. Klik "Mulai Scan" untuk memulai.';
-        }
-    }
-
-    function refreshScan() {
-        if (isScanning) {
-            stopScan();
-            setTimeout(startScan, 500);
-        } else {
-            scanStatus.className = 'scan-status';
-            scanStatus.innerHTML = '<i class="fas fa-info-circle"></i> Klik "Mulai Scan" untuk mengaktifkan kamera';
-        }
-    }
-
-    startScanBtn.addEventListener('click', startScan);
-    stopScanBtn.addEventListener('click', stopScan);
-    refreshScanBtn.addEventListener('click', refreshScan);
-
-    captureScanBtn.addEventListener('click', function() {
-        if (!scanVideo.videoWidth || !scanVideo.videoHeight) {
-            alert('Video belum siap. Mulai scan terlebih dahulu.');
-            return;
-        }
-        scanCanvas.width = scanVideo.videoWidth;
-        scanCanvas.height = scanVideo.videoHeight;
-        const ctx = scanCanvas.getContext('2d');
-        ctx.drawImage(scanVideo, 0, 0, scanCanvas.width, scanCanvas.height);
-        const dataUrl = scanCanvas.toDataURL('image/jpeg', 0.85);
-        capturedPhotoData = dataUrl;
-        capturedImg.src = dataUrl;
-        photoStatus.textContent = 'Foto dari scan berhasil diambil ✅';
-        photoStatus.style.color = '#1f9d5a';
-        document.querySelector('.tab-btn[data-tab="tabAbsen"]').click();
-        verifyFace(dataUrl);
-        alert('✅ Foto berhasil diambil dari scan! Silakan lanjutkan absen.');
-    });
-
-    function absenFromScan() {
-        if (scannedBarcode) {
-            const siswa = siswaData.find(s => s.nis === scannedBarcode);
-            if (siswa) {
-                namaInput.value = siswa.nama;
-                const options = kelasSelect.options;
-                for (let i = 0; i < options.length; i++) {
-                    if (options[i].value === siswa.kelas) {
-                        kelasSelect.selectedIndex = i;
-                        break;
-                    }
-                }
-                document.querySelector('.tab-btn[data-tab="tabAbsen"]').click();
-                setTimeout(() => {
-                    absenBtn.click();
-                }, 300);
-            } else {
-                alert('Siswa dengan NIS "' + scannedBarcode + '" tidak ditemukan di database.');
-            }
-        } else {
-            alert('Tidak ada hasil scan. Silakan scan barcode terlebih dahulu.');
-        }
-    }
-
-    function clearScanResult() {
-        barcodeResult.classList.remove('show');
-        scannedBarcode = null;
-        if (!isScanning) {
-            scanStatus.className = 'scan-status';
-            scanStatus.innerHTML = '<i class="fas fa-info-circle"></i> Hasil scan dibersihkan.';
-        }
-    }
 
     // ==============================================================
     // FOTO SISWA
@@ -3550,7 +3860,6 @@
             return;
         }
 
-        // Jika metode Foto dan ada face verification, cek status
         if (metode === 'Foto' && faceVerificationResult !== null) {
             if (!faceVerificationResult.match) {
                 alert('❌ ABSEN DITOLAK!\n\nWajah tidak cocok dengan data di database.\n\nSilakan:\n1. Pastikan siswa sudah terdaftar di database\n2. Upload foto siswa di menu Database Siswa\n3. Coba ambil foto dengan pencahayaan yang lebih baik');
@@ -3558,7 +3867,6 @@
             }
         }
 
-        // Jika metode Foto dan belum ada verifikasi (misal face model gagal)
         if (metode === 'Foto' && faceVerificationResult === null && isFaceModelLoaded) {
             alert('Silakan ambil foto terlebih dahulu untuk verifikasi wajah.');
             return;

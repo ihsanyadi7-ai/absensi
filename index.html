@@ -1003,7 +1003,6 @@
             display: block;
         }
 
-        /* Database Siswa */
         .db-actions {
             display: flex;
             gap: 10px;
@@ -1055,7 +1054,6 @@
             display: none;
         }
 
-        /* Upload Foto Siswa */
         .foto-upload-area {
             border: 2px dashed #d6e0ee;
             border-radius: 12px;
@@ -1327,6 +1325,50 @@
             font-size: 0.8rem;
         }
 
+        .face-result {
+            display: none;
+            margin-top: 12px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 2px solid;
+            align-items: center;
+            gap: 12px;
+        }
+        .face-result.show {
+            display: flex;
+        }
+        .face-result.match {
+            background: #e8f5ed;
+            border-color: #1f9d5a;
+            color: #0f6a3a;
+        }
+        .face-result.unmatch {
+            background: #fef0f0;
+            border-color: #d14c4c;
+            color: #9e2a2a;
+        }
+        .face-result.loading {
+            background: #fff3cd;
+            border-color: #e6a020;
+            color: #856404;
+        }
+        .face-result .face-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+        .face-result .face-content {
+            flex: 1;
+        }
+        .face-result .face-text {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        .face-result .face-detail {
+            font-size: 0.85rem;
+            margin-top: 2px;
+            opacity: 0.8;
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -1456,8 +1498,7 @@
                         <span id="photoStatus" style="font-size:0.85rem; color:#4b6e92;">Belum ada foto</span>
                     </div>
 
-                    <!-- Face Detection Result -->
-                    <div class="face-result" id="faceResult" style="display:none; margin-top:12px; padding:12px 16px; border-radius:12px; border:2px solid; align-items:center; gap:12px;">
+                    <div class="face-result" id="faceResult">
                         <span class="face-icon" id="faceIcon"><i class="fas fa-user-check"></i></span>
                         <div class="face-content">
                             <div class="face-text" id="faceText">Wajah dikenali</div>
@@ -1809,7 +1850,7 @@
                 </div>
                 <div class="foto-text">
                     <strong>Klik untuk upload foto</strong><br />
-                    <span style="font-size: 0.7rem; color: #8195af;">Format: JPG, PNG, GIF (Max 2MB)</span>
+                    <span style="font-size: 0.7rem; color: #8195af;">Format: JPG, PNG, GIF (Max 2MB, akan dikompres)</span>
                 </div>
                 <input type="file" id="fotoInput" accept="image/*" />
             </div>
@@ -2664,21 +2705,79 @@
     }
 
     // ==============================================================
-    // FOTO SISWA
+    // COMPRESS FOTO - OPTIMASI UNTUK LOCALSTORAGE
+    // ==============================================================
+    function compressImage(dataUrl, maxWidth = 200, maxHeight = 200, quality = 0.6) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.src = dataUrl;
+            img.onload = function() {
+                let width = img.width;
+                let height = img.height;
+                
+                // Hitung rasio untuk resize
+                if (width > maxWidth) {
+                    height = (maxWidth / width) * height;
+                    width = maxWidth;
+                }
+                if (height > maxHeight) {
+                    width = (maxHeight / height) * width;
+                    height = maxHeight;
+                }
+                
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // Kompres ke JPEG
+                const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                resolve(compressedDataUrl);
+            };
+            img.onerror = function() {
+                // Jika gagal, return original
+                resolve(dataUrl);
+            };
+        });
+    }
+
+    // ==============================================================
+    // FOTO SISWA - DENGAN KOMPRESI
     // ==============================================================
     fotoInput.addEventListener('change', function(e) {
         if (this.files && this.files[0]) {
+            // Cek ukuran file (max 2MB)
             if (this.files[0].size > 2 * 1024 * 1024) {
                 alert('Ukuran foto terlalu besar. Maksimal 2MB.');
                 this.value = '';
                 return;
             }
+            
             const reader = new FileReader();
-            reader.onload = function(event) {
-                tempFotoData = event.target.result;
-                fotoPreview.src = tempFotoData;
-                fotoPreview.style.display = 'block';
-                fotoPlaceholder.style.display = 'none';
+            reader.onload = async function(event) {
+                try {
+                    // Kompres foto sebelum preview
+                    const compressed = await compressImage(event.target.result, 150, 150, 0.5);
+                    tempFotoData = compressed;
+                    fotoPreview.src = compressed;
+                    fotoPreview.style.display = 'block';
+                    fotoPlaceholder.style.display = 'none';
+                    
+                    // Tampilkan info ukuran
+                    const originalSize = (event.target.result.length / 1024).toFixed(1);
+                    const compressedSize = (compressed.length / 1024).toFixed(1);
+                    document.querySelector('.foto-text').innerHTML = 
+                        `<strong>Foto terkompresi</strong><br />
+                        <span style="font-size: 0.7rem; color: #8195af;">Ukuran: ${originalSize}KB → ${compressedSize}KB</span>`;
+                } catch (error) {
+                    console.error('Error compressing image:', error);
+                    // Fallback: gunakan original
+                    tempFotoData = event.target.result;
+                    fotoPreview.src = event.target.result;
+                    fotoPreview.style.display = 'block';
+                    fotoPlaceholder.style.display = 'none';
+                }
             };
             reader.readAsDataURL(this.files[0]);
         }
@@ -2690,6 +2789,9 @@
         fotoPreview.style.display = 'none';
         fotoPlaceholder.style.display = 'flex';
         fotoInput.value = '';
+        document.querySelector('.foto-text').innerHTML = 
+            `<strong>Klik untuk upload foto</strong><br />
+            <span style="font-size: 0.7rem; color: #8195af;">Format: JPG, PNG, GIF (Max 2MB, akan dikompres)</span>`;
     }
 
     function showFotoPreview(fotoData) {
@@ -3420,7 +3522,7 @@
             { id: 26, nama: 'Mala Daniati', kelas: 'XII AB1', nis: 'TIK-026', foto: null },
             { id: 27, nama: 'Sriyani', kelas: 'XII B1', nis: 'TIK-027', foto: null },
             { id: 28, nama: 'Amar Apandi', kelas: 'XI C1', nis: 'TIK-028', foto: null },
-            { id: 29, nama: 'Fatimatuzzahrah', kelas: 'XI A1', nis: 'TIK
+            { id: 29, nama: 'Fatimatuzzahrah', kelas: 'XI A1', nis: 'TIK-029', foto : null },
             { id: 30, nama: 'Zohriatam Musannif', kelas: 'XI C1', nis: 'TIK-030', foto: null },
             { id: 31, nama: 'Wilda Azkia', kelas: 'XII A2', nis: 'TIK-031', foto: null },
             { id: 32, nama: 'Rahmawati', kelas: 'XII B1', nis: 'TIK-032', foto: null },

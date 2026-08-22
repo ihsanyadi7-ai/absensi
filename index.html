@@ -814,18 +814,11 @@
             background: #fef0f0;
             border-left-color: #d14c4c;
         }
-        .notification-item.wajah-tidak-dikenal {
-            background: #fef0f0;
-            border-left-color: #d14c4c;
-        }
         .notification-item .notif-icon {
             color: #e6a020;
             font-size: 1.1rem;
         }
         .notification-item.lokasi-salah .notif-icon {
-            color: #d14c4c;
-        }
-        .notification-item.wajah-tidak-dikenal .notif-icon {
             color: #d14c4c;
         }
         .notification-item .notif-text {
@@ -1326,47 +1319,11 @@
         }
 
         .face-result {
-            display: none;
-            margin-top: 12px;
-            padding: 12px 16px;
-            border-radius: 12px;
-            border: 2px solid;
-            align-items: center;
-            gap: 12px;
+            display: none !important;
         }
-        .face-result.show {
-            display: flex;
-        }
-        .face-result.match {
-            background: #e8f5ed;
-            border-color: #1f9d5a;
-            color: #0f6a3a;
-        }
-        .face-result.unmatch {
-            background: #fef0f0;
-            border-color: #d14c4c;
-            color: #9e2a2a;
-        }
-        .face-result.loading {
-            background: #fff3cd;
-            border-color: #e6a020;
-            color: #856404;
-        }
-        .face-result .face-icon {
-            font-size: 1.5rem;
-            flex-shrink: 0;
-        }
-        .face-result .face-content {
-            flex: 1;
-        }
-        .face-result .face-text {
-            font-weight: 600;
-            font-size: 1rem;
-        }
-        .face-result .face-detail {
-            font-size: 0.85rem;
-            margin-top: 2px;
-            opacity: 0.8;
+
+        .camera-switch-btn {
+            margin-top: 8px;
         }
 
         @keyframes fadeIn {
@@ -1394,7 +1351,6 @@
             .siswa-item .actions { align-self: flex-end; }
             .scan-mode-toggle { flex-direction: row; }
             .scan-mode-toggle .btn { flex: 1; font-size: 0.8rem; padding: 8px 10px; }
-            .face-result { flex-direction: column; text-align: center; }
             .notification-item { flex-wrap: wrap; }
             .camera-wrapper { gap: 15px; }
             .video-box { flex: 1 1 100%; }
@@ -1461,6 +1417,9 @@
                     <div class="capture-tools">
                         <button class="btn btn-primary" id="captureBtn"><i class="fas fa-camera"></i> Ambil Foto</button>
                         <button class="btn btn-outline" id="refreshCam"><i class="fas fa-sync-alt"></i> Refresh</button>
+                        <button class="btn btn-info camera-switch-btn" onclick="switchCameraAbsen()">
+                            <i class="fas fa-sync-alt"></i> Ganti Kamera
+                        </button>
                     </div>
                 </div>
 
@@ -1496,14 +1455,6 @@
                         <span style="font-weight:500; color:#1d3a5f;">Foto:</span>
                         <img id="capturedPhoto" src="" alt="preview foto" />
                         <span id="photoStatus" style="font-size:0.85rem; color:#4b6e92;">Belum ada foto</span>
-                    </div>
-
-                    <div class="face-result" id="faceResult">
-                        <span class="face-icon" id="faceIcon"><i class="fas fa-user-check"></i></span>
-                        <div class="face-content">
-                            <div class="face-text" id="faceText">Wajah dikenali</div>
-                            <div class="face-detail" id="faceDetail">-</div>
-                        </div>
                     </div>
 
                     <button class="btn-absen" id="absenBtn">
@@ -1582,7 +1533,7 @@
                         <button class="btn btn-warning" id="torchBtn" onclick="toggleTorch()">
                             <i class="fas fa-lightbulb"></i> Lampu
                         </button>
-                        <button class="btn btn-outline" onclick="switchCamera()">
+                        <button class="btn btn-info" onclick="switchCameraScan()">
                             <i class="fas fa-sync-alt"></i> Ganti Kamera
                         </button>
                     </div>
@@ -1894,12 +1845,6 @@
     const kelasSelect = document.getElementById('kelasSiswa');
     const absenBtn = document.getElementById('absenBtn');
 
-    // Face detection elements
-    const faceResult = document.getElementById('faceResult');
-    const faceIcon = document.getElementById('faceIcon');
-    const faceText = document.getElementById('faceText');
-    const faceDetail = document.getElementById('faceDetail');
-
     // Scan elements
     const scanVideo = document.getElementById('scanVideo');
     const scanCanvas = document.getElementById('scanCanvas');
@@ -1971,10 +1916,8 @@
     let importData = [];
     let tempFotoData = null;
     let barcodeReader = null;
-    let isFaceModelLoaded = false;
-    let faceVerificationResult = null;
-    let isFaceVerifying = false;
-    let currentCameraFacing = 'environment';
+    let currentCameraFacing = 'environment'; // 'environment' or 'user'
+    let scanCameraFacing = 'environment';
     let torchActive = false;
     let isLocationManual = true;
 
@@ -2007,7 +1950,7 @@
     });
 
     // ==============================================================
-    // KAMERA ABSEN
+    // KAMERA ABSEN - DENGAN SWITCH DEPAN/BELAKANG
     // ==============================================================
     async function startCamera() {
         try {
@@ -2015,13 +1958,37 @@
                 stream.getTracks().forEach(t => t.stop());
             }
             stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
+                video: { facingMode: currentCameraFacing, width: { ideal: 640 }, height: { ideal: 480 } }
             });
             video.srcObject = stream;
             await video.play();
         } catch (err) {
-            alert('Kamera tidak dapat diakses. Pastikan izin kamera diberikan.\nError: ' + err.message);
+            // Coba dengan facingMode user jika environment gagal
+            if (currentCameraFacing === 'environment') {
+                try {
+                    currentCameraFacing = 'user';
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
+                    });
+                    video.srcObject = stream;
+                    await video.play();
+                } catch (e) {
+                    alert('Kamera tidak dapat diakses. Pastikan izin kamera diberikan.\nError: ' + e.message);
+                }
+            } else {
+                alert('Kamera tidak dapat diakses. Pastikan izin kamera diberikan.\nError: ' + err.message);
+            }
         }
+    }
+
+    function switchCameraAbsen() {
+        currentCameraFacing = currentCameraFacing === 'environment' ? 'user' : 'environment';
+        startCamera();
+        // Reset captured photo
+        capturedPhotoData = null;
+        capturedImg.src = '';
+        photoStatus.textContent = 'Kamera diganti';
+        photoStatus.style.color = '#4b6e92';
     }
 
     function capturePhoto() {
@@ -2037,9 +2004,7 @@
         capturedImg.src = capturedPhotoData;
         photoStatus.textContent = 'Foto berhasil diambil ✅';
         photoStatus.style.color = '#1f9d5a';
-        
-        absenBtn.disabled = true;
-        verifyFace(capturedPhotoData);
+        absenBtn.disabled = false;
     }
 
     function refreshCamera() {
@@ -2048,9 +2013,7 @@
         capturedImg.src = '';
         photoStatus.textContent = 'Kamera dimuat ulang';
         photoStatus.style.color = '#4b6e92';
-        faceResult.style.display = 'none';
         absenBtn.disabled = false;
-        faceVerificationResult = null;
     }
 
     captureBtn.addEventListener('click', capturePhoto);
@@ -2242,7 +2205,7 @@
     }
 
     // ==============================================================
-    // SCAN BARCODE
+    // SCAN BARCODE - DENGAN SWITCH KAMERA
     // ==============================================================
     function setScanMode(mode) {
         scanMode = mode;
@@ -2258,6 +2221,14 @@
         }
         barcodeResult.classList.remove('show');
         scannedBarcode = null;
+        if (isScanning) {
+            stopScan();
+            setTimeout(startScan, 500);
+        }
+    }
+
+    function switchCameraScan() {
+        scanCameraFacing = scanCameraFacing === 'environment' ? 'user' : 'environment';
         if (isScanning) {
             stopScan();
             setTimeout(startScan, 500);
@@ -2290,7 +2261,7 @@
             
             const constraints = {
                 video: { 
-                    facingMode: currentCameraFacing,
+                    facingMode: scanCameraFacing,
                     width: { ideal: isMobile ? 1280 : 640 },
                     height: { ideal: isMobile ? 720 : 480 },
                     aspectRatio: { ideal: 4/3 }
@@ -2460,16 +2431,6 @@
         }
     }
 
-    function switchCamera() {
-        if (isScanning) {
-            stopScan();
-            setTimeout(() => {
-                currentCameraFacing = currentCameraFacing === 'environment' ? 'user' : 'environment';
-                startScan();
-            }, 300);
-        }
-    }
-
     captureScanBtn.addEventListener('click', function() {
         if (!scanVideo.videoWidth || !scanVideo.videoHeight) {
             alert('Video belum siap. Mulai scan terlebih dahulu.');
@@ -2485,7 +2446,7 @@
         photoStatus.textContent = 'Foto dari scan berhasil diambil ✅';
         photoStatus.style.color = '#1f9d5a';
         document.querySelector('.tab-btn[data-tab="tabAbsen"]').click();
-        verifyFace(dataUrl);
+        absenBtn.disabled = false;
         alert('✅ Foto berhasil diambil dari scan! Silakan lanjutkan absen.');
     });
 
@@ -2521,193 +2482,9 @@
     }
 
     // ==============================================================
-    // FACE DETECTION & VERIFICATION
-    // ==============================================================
-    async function loadFaceModels() {
-        try {
-            const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
-            await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-            await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
-            await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
-            await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
-            isFaceModelLoaded = true;
-            console.log('Face API models loaded successfully');
-            return true;
-        } catch (err) {
-            console.error('Error loading face models:', err);
-            isFaceModelLoaded = false;
-            return false;
-        }
-    }
-
-    async function verifyFace(photoData) {
-        if (isFaceVerifying) return;
-        isFaceVerifying = true;
-        
-        if (!isFaceModelLoaded) {
-            const loaded = await loadFaceModels();
-            if (!loaded) {
-                faceResult.style.display = 'flex';
-                faceResult.className = 'face-result loading';
-                faceIcon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
-                faceText.textContent = 'Model wajah tidak tersedia';
-                faceDetail.textContent = 'Silakan refresh halaman atau periksa koneksi internet.';
-                isFaceVerifying = false;
-                absenBtn.disabled = false;
-                return;
-            }
-        }
-
-        faceResult.style.display = 'flex';
-        faceResult.className = 'face-result loading';
-        faceIcon.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        faceText.textContent = 'Memverifikasi wajah...';
-        faceDetail.textContent = 'Mohon tunggu sebentar.';
-        absenBtn.disabled = true;
-
-        try {
-            const img = new Image();
-            img.src = photoData;
-            await new Promise((resolve) => { img.onload = resolve; });
-
-            const detections = await faceapi.detectAllFaces(
-                img,
-                new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 })
-            ).withFaceLandmarks().withFaceDescriptors();
-
-            if (detections.length === 0) {
-                faceResult.className = 'face-result unmatch';
-                faceIcon.innerHTML = '<i class="fas fa-user-slash"></i>';
-                faceText.textContent = '❌ TIDAK ADA WAJAH TERDETEKSI';
-                faceDetail.textContent = 'Pastikan foto diambil dengan jelas dan wajah terlihat.';
-                faceVerificationResult = { match: false, siswa: null, reason: 'No face detected' };
-                absenBtn.disabled = true;
-                isFaceVerifying = false;
-                return;
-            }
-
-            const matchedStudent = await findMatchingFace(detections[0].descriptor);
-
-            if (matchedStudent) {
-                faceResult.className = 'face-result match';
-                faceIcon.innerHTML = '<i class="fas fa-user-check"></i>';
-                faceText.textContent = `✅ WAJAH COCOK: ${matchedStudent.nama}`;
-                faceDetail.textContent = `Kelas: ${matchedStudent.kelas} | NIS: ${matchedStudent.nis || '-'}`;
-                faceVerificationResult = { match: true, siswa: matchedStudent };
-                absenBtn.disabled = false;
-                
-                namaInput.value = matchedStudent.nama;
-                const options = kelasSelect.options;
-                for (let i = 0; i < options.length; i++) {
-                    if (options[i].value === matchedStudent.kelas) {
-                        kelasSelect.selectedIndex = i;
-                        break;
-                    }
-                }
-                
-                photoStatus.textContent = `✅ Wajah cocok: ${matchedStudent.nama}`;
-                photoStatus.style.color = '#1f9d5a';
-                
-                alert(`✅ Verifikasi wajah berhasil!\n\nNama: ${matchedStudent.nama}\nKelas: ${matchedStudent.kelas}\n\nKlik "Absen Sekarang" untuk melanjutkan.`);
-                
-            } else {
-                faceResult.className = 'face-result unmatch';
-                faceIcon.innerHTML = '<i class="fas fa-user-slash"></i>';
-                faceText.textContent = '❌ ORANG TIDAK DIKENAL';
-                faceDetail.textContent = 'Wajah tidak terdaftar di database. Silakan daftarkan siswa terlebih dahulu.';
-                faceVerificationResult = { match: false, siswa: null, reason: 'Unknown person' };
-                absenBtn.disabled = true;
-                
-                const today = new Date().toLocaleDateString('id-ID', {
-                    day: '2-digit', month: '2-digit', year: 'numeric'
-                });
-                const jam = new Date().toLocaleTimeString('id-ID', {
-                    hour: '2-digit', minute: '2-digit'
-                });
-                
-                const nama = namaInput.value.trim() || 'Tidak diketahui';
-                
-                const existingNotif = notifications.some(n => 
-                    n.type === 'wajah_tidak_dikenal' && 
-                    n.tanggal === today &&
-                    n.nama === nama
-                );
-                
-                if (!existingNotif) {
-                    const newNotif = {
-                        id: Date.now() + Math.random(),
-                        nama: nama,
-                        kelas: kelasSelect.value || '-',
-                        tanggal: today,
-                        jam: jam,
-                        message: '❌ WAJAH TIDAK DIKENALI - Foto tidak cocok dengan database siswa.',
-                        type: 'wajah_tidak_dikenal',
-                        status: 'Mencurigakan'
-                    };
-                    notifications.push(newNotif);
-                    if (notifications.length > 100) {
-                        notifications = notifications.slice(-100);
-                    }
-                    saveData();
-                    renderNotifications();
-                }
-                
-                alert('⚠️ PERINGATAN: WAJAH TIDAK DIKENALI!\n\nWajah yang diambil tidak cocok dengan data siswa di database.\n\nSilakan:\n1. Pastikan siswa sudah terdaftar di database\n2. Upload foto siswa di menu Database Siswa\n3. Coba ambil foto dengan pencahayaan yang lebih baik');
-            }
-
-        } catch (error) {
-            console.error('Face verification error:', error);
-            faceResult.className = 'face-result unmatch';
-            faceIcon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
-            faceText.textContent = '❌ Error verifikasi wajah';
-            faceDetail.textContent = 'Terjadi kesalahan saat verifikasi. Silakan coba lagi.';
-            faceVerificationResult = { match: false, siswa: null, reason: 'Error' };
-            absenBtn.disabled = true;
-        }
-        
-        isFaceVerifying = false;
-    }
-
-    async function findMatchingFace(descriptor) {
-        const studentsWithPhoto = siswaData.filter(s => s.foto);
-        
-        if (studentsWithPhoto.length === 0) {
-            return null;
-        }
-
-        let bestMatch = null;
-        let bestDistance = 0.6;
-
-        for (const student of studentsWithPhoto) {
-            try {
-                const img = new Image();
-                img.src = student.foto;
-                await new Promise((resolve) => { img.onload = resolve; });
-
-                const detections = await faceapi.detectAllFaces(
-                    img,
-                    new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 })
-                ).withFaceLandmarks().withFaceDescriptors();
-
-                if (detections.length > 0) {
-                    const distance = faceapi.euclideanDistance(descriptor, detections[0].descriptor);
-                    if (distance < bestDistance) {
-                        bestDistance = distance;
-                        bestMatch = student;
-                    }
-                }
-            } catch (e) {
-                console.error('Error matching face for student:', student.nama, e);
-            }
-        }
-
-        return bestMatch;
-    }
-
-    // ==============================================================
     // COMPRESS FOTO - OPTIMASI UNTUK LOCALSTORAGE
     // ==============================================================
-    function compressImage(dataUrl, maxWidth = 200, maxHeight = 200, quality = 0.6) {
+    function compressImage(dataUrl, maxWidth = 200, maxHeight = 200, quality = 0.5) {
         return new Promise((resolve) => {
             const img = new Image();
             img.src = dataUrl;
@@ -2715,7 +2492,6 @@
                 let width = img.width;
                 let height = img.height;
                 
-                // Hitung rasio untuk resize
                 if (width > maxWidth) {
                     height = (maxWidth / width) * height;
                     width = maxWidth;
@@ -2731,12 +2507,10 @@
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
                 
-                // Kompres ke JPEG
                 const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
                 resolve(compressedDataUrl);
             };
             img.onerror = function() {
-                // Jika gagal, return original
                 resolve(dataUrl);
             };
         });
@@ -2747,7 +2521,6 @@
     // ==============================================================
     fotoInput.addEventListener('change', function(e) {
         if (this.files && this.files[0]) {
-            // Cek ukuran file (max 2MB)
             if (this.files[0].size > 2 * 1024 * 1024) {
                 alert('Ukuran foto terlalu besar. Maksimal 2MB.');
                 this.value = '';
@@ -2757,14 +2530,12 @@
             const reader = new FileReader();
             reader.onload = async function(event) {
                 try {
-                    // Kompres foto sebelum preview
-                    const compressed = await compressImage(event.target.result, 150, 150, 0.5);
+                    const compressed = await compressImage(event.target.result, 200, 200, 0.5);
                     tempFotoData = compressed;
                     fotoPreview.src = compressed;
                     fotoPreview.style.display = 'block';
                     fotoPlaceholder.style.display = 'none';
                     
-                    // Tampilkan info ukuran
                     const originalSize = (event.target.result.length / 1024).toFixed(1);
                     const compressedSize = (compressed.length / 1024).toFixed(1);
                     document.querySelector('.foto-text').innerHTML = 
@@ -2772,7 +2543,6 @@
                         <span style="font-size: 0.7rem; color: #8195af;">Ukuran: ${originalSize}KB → ${compressedSize}KB</span>`;
                 } catch (error) {
                     console.error('Error compressing image:', error);
-                    // Fallback: gunakan original
                     tempFotoData = event.target.result;
                     fotoPreview.src = event.target.result;
                     fotoPreview.style.display = 'block';
@@ -2806,7 +2576,7 @@
     }
 
     // ==============================================================
-    // IMPORT EXCEL - Sesuai Database
+    // IMPORT EXCEL
     // ==============================================================
     function showImportModal() {
         document.getElementById('importModal').classList.add('active');
@@ -3371,8 +3141,7 @@
                     status: item.status || 'Hadir',
                     lokasiStatus: item.lokasiStatus || 'Tidak Diketahui',
                     metode: item.metode || 'Foto',
-                    lokasiNama: item.lokasiNama || null,
-                    faceVerified: item.faceVerified || false
+                    lokasiNama: item.lokasiNama || null
                 }));
             } catch (e) {
                 absensiData = [];
@@ -3397,7 +3166,6 @@
                     lokasiStatus: 'Lokasi Benar',
                     metode: 'Foto',
                     lokasiNama: 'SMK Negeri 1',
-                    faceVerified: true,
                     lastVerified: Date.now()
                 },
             ];
@@ -3477,10 +3245,6 @@
         renderAll();
         renderNotifications();
         renderSiswaList();
-        
-        setTimeout(() => {
-            loadFaceModels();
-        }, 2000);
     }
 
     function saveData() {
@@ -3494,39 +3258,36 @@
     // ==============================================================
     function loadDefaultSiswa() {
         siswaData = [
-            { id: 1, nama: 'Ardini pani', kelas: 'XI B1', nis: 'TIK-001', foto: null },
-            { id: 2, nama: 'Annisa Meuthia Maulina', kelas: 'XII B1', nis: 'TIK-002', foto: null },
-            { id: 3, nama: 'Anmniatun Naqiah', kelas: 'XII B1', nis: 'TIK-003', foto: null },
-            { id: 4, nama: 'Amelia Harianti Putri', kelas: 'XII B2', nis: 'TIK-004', foto: null },
-            { id: 5, nama: 'Sohyuni', kelas: 'XI A1', nis: 'TIK-005', foto: null },
-            { id: 6, nama: 'Putri iliyin', kelas: 'XI A1', nis: 'TIK-006', foto: null },
-            { id: 7, nama: 'Anis Humaira Johan', kelas: 'XI A1', nis: 'TIK-007', foto: null },
-            { id: 8, nama: 'Siti Kulsum Salsabila', kelas: 'XI A1', nis: 'TIK-008', foto: null },
-            { id: 9, nama: 'Cahaya Septiani', kelas: 'XI B1', nis: 'TIK-009', foto: null },
-            { id: 10, nama: 'Rohmatul Izzah', kelas: 'XI A1', nis: 'TIK-010', foto: null },
-            { id: 11, nama: 'Dinda Febrianita', kelas: 'XI B2', nis: 'TIK-011', foto: null },
-            { id: 12, nama: 'Nur Aini', kelas: 'XII B1', nis: 'TIK-012', foto: null },
-            { id: 13, nama: 'Laelatul Fitriani', kelas: 'XI B1', nis: 'TIK-013', foto: null },
-            { id: 14, nama: 'Roziatul Amaliah', kelas: 'XI B1', nis: 'TIK-014', foto: null },
-            { id: 15, nama: 'Luluil Maknun', kelas: 'XI B2', nis: 'TIK-015', foto: null },
-            { id: 16, nama: 'Jenika Amalia', kelas: 'XI B2', nis: 'TIK-016', foto: null },
-            { id: 17, nama: 'Dina Aulia Rizki', kelas: 'XII B1', nis: 'TIK-017', foto: null },
-            { id: 18, nama: 'Muhammad Faizul Maulana', kelas: 'XI C1', nis: 'TIK-018', foto: null },
-            { id: 19, nama: 'Ahmad Qurniawan', kelas: 'XI B2', nis: 'TIK-019', foto: null },
-            { id: 20, nama: 'Muhammad Bahran Jaelani', kelas: 'XI A2', nis: 'TIK-020', foto: null },
-            { id: 21, nama: 'Muhammad masud Irawan', kelas: 'XI B2', nis: 'TIK-021', foto: null },
-            { id: 22, nama: 'Ahmad Sakbani', kelas: 'XI A2', nis: 'TIK-022', foto: null },
-            { id: 23, nama: 'Abdulloh Taqiudin Robbani', kelas: 'XI A1', nis: 'TIK-023', foto: null },
-            { id: 24, nama: 'Zulpa Azkia Ul-Husna', kelas: 'XII B1', nis: 'TIK-024', foto: null },
-            { id: 25, nama: 'Alifa Nuraziza', kelas: 'XII B1', nis: 'TIK-025', foto: null },
-            { id: 26, nama: 'Mala Daniati', kelas: 'XII AB1', nis: 'TIK-026', foto: null },
-            { id: 27, nama: 'Sriyani', kelas: 'XII B1', nis: 'TIK-027', foto: null },
-            { id: 28, nama: 'Amar Apandi', kelas: 'XI C1', nis: 'TIK-028', foto: null },
-            { id: 29, nama: 'Fatimatuzzahrah', kelas: 'XI A1', nis: 'TIK-029', foto : null },
-            { id: 30, nama: 'Zohriatam Musannif', kelas: 'XI C1', nis: 'TIK-030', foto: null },
-            { id: 31, nama: 'Wilda Azkia', kelas: 'XII A2', nis: 'TIK-031', foto: null },
-            { id: 32, nama: 'Rahmawati', kelas: 'XII B1', nis: 'TIK-032', foto: null },
-            { id: 33, nama: 'Muhammad ali al asyari', kelas: 'XI B1', nis: 'TIK-033', foto: null },
+            { id: 1, nama: 'Ahmad Fauzi', kelas: 'X FASE E1', nis: 'TIK-001', foto: null },
+            { id: 2, nama: 'Budi Santoso', kelas: 'X FASE E2', nis: 'TIK-002', foto: null },
+            { id: 3, nama: 'Citra Dewi', kelas: 'X FASE E3', nis: 'TIK-003', foto: null },
+            { id: 4, nama: 'Deni Pratama', kelas: 'X FASE E4', nis: 'TIK-004', foto: null },
+            { id: 5, nama: 'Eka Putri', kelas: 'X FASE E5', nis: 'TIK-005', foto: null },
+            { id: 6, nama: 'Farhan Hidayat', kelas: 'XI A1', nis: 'TIK-006', foto: null },
+            { id: 7, nama: 'Gita Permata', kelas: 'XI A2', nis: 'TIK-007', foto: null },
+            { id: 8, nama: 'Hendra Wijaya', kelas: 'XI B1', nis: 'TIK-008', foto: null },
+            { id: 9, nama: 'Indah Sari', kelas: 'XI B2', nis: 'TIK-009', foto: null },
+            { id: 10, nama: 'Joko Susilo', kelas: 'XI C1', nis: 'TIK-010', foto: null },
+            { id: 11, nama: 'Kartika Dewi', kelas: 'XII A1', nis: 'TIK-011', foto: null },
+            { id: 12, nama: 'Lukman Hakim', kelas: 'XII A2', nis: 'TIK-012', foto: null },
+            { id: 13, nama: 'Maya Sari', kelas: 'XII B1', nis: 'TIK-013', foto: null },
+            { id: 14, nama: 'Nugroho', kelas: 'XII B2', nis: 'TIK-014', foto: null },
+            { id: 15, nama: 'Oktavia', kelas: 'XII C1', nis: 'TIK-015', foto: null },
+            { id: 16, nama: 'Putri Amelia', kelas: 'X FASE E1', nis: 'TIK-016', foto: null },
+            { id: 17, nama: 'Rizky Ramadhan', kelas: 'X FASE E2', nis: 'TIK-017', foto: null },
+            { id: 18, nama: 'Siti Rahma', kelas: 'X FASE E3', nis: 'TIK-018', foto: null },
+            { id: 19, nama: 'Taufik Hidayat', kelas: 'X FASE E4', nis: 'TIK-019', foto: null },
+            { id: 20, nama: 'Umi Kalsum', kelas: 'X FASE E5', nis: 'TIK-020', foto: null },
+            { id: 21, nama: 'Vina Aprilia', kelas: 'XI A1', nis: 'TIK-021', foto: null },
+            { id: 22, nama: 'Wahyu Setiawan', kelas: 'XI A2', nis: 'TIK-022', foto: null },
+            { id: 23, nama: 'Xavier Putra', kelas: 'XI B1', nis: 'TIK-023', foto: null },
+            { id: 24, nama: 'Yuni Astuti', kelas: 'XI B2', nis: 'TIK-024', foto: null },
+            { id: 25, nama: 'Zainal Abidin', kelas: 'XI C1', nis: 'TIK-025', foto: null },
+            { id: 26, nama: 'Agus Salim', kelas: 'XII A1', nis: 'TIK-026', foto: null },
+            { id: 27, nama: 'Bella Safira', kelas: 'XII A2', nis: 'TIK-027', foto: null },
+            { id: 28, nama: 'Cahyo Nugroho', kelas: 'XII B1', nis: 'TIK-028', foto: null },
+            { id: 29, nama: 'Dinda Ayu', kelas: 'XII B2', nis: 'TIK-029', foto: null },
+            { id: 30, nama: 'Eko Prasetyo', kelas: 'XII C1', nis: 'TIK-030', foto: null },
         ];
         saveData();
     }
@@ -3747,7 +3508,6 @@
             else metodeBadge += ' tidak-diketahui';
             
             const lokasiDisplay = item.lokasiNama || item.lokasiStatus || 'Tidak Diketahui';
-            const faceStatus = item.faceVerified ? '✅' : '❌';
             
             html += `
                 <tr>
@@ -3763,7 +3523,7 @@
                     <td>${escapeHtml(item.jam || item.waktu?.split(',')[1]?.trim() || '-')}</td>
                     <td><span class="${metodeBadge}">${escapeHtml(item.metode || 'Foto')}</span></td>
                     <td><span class="${lokasiBadge}">${escapeHtml(lokasiDisplay)}</span></td>
-                    <td><span class="${statusBadge}">${escapeHtml(item.status)} ${faceStatus}</span></td>
+                    <td><span class="${statusBadge}">${escapeHtml(item.status)}</span></td>
                     <td style="text-align:center;">
                         <button class="delete-btn" onclick="deleteSingleRecord(${item.id})" title="Hapus">
                             <i class="fas fa-trash-alt"></i>
@@ -3822,11 +3582,8 @@
         let html = '';
         todayNotif.forEach((notif, index) => {
             const isLokasiSalah = notif.type === 'lokasi_salah';
-            const isWajahTidakDikenal = notif.type === 'wajah_tidak_dikenal';
-            const itemClass = isLokasiSalah ? 'notification-item lokasi-salah' : 
-                             (isWajahTidakDikenal ? 'notification-item wajah-tidak-dikenal' : 'notification-item');
-            const iconClass = isLokasiSalah ? 'fas fa-map-marker-alt' : 
-                             (isWajahTidakDikenal ? 'fas fa-user-slash' : 'fas fa-exclamation-triangle');
+            const itemClass = isLokasiSalah ? 'notification-item lokasi-salah' : 'notification-item';
+            const iconClass = isLokasiSalah ? 'fas fa-map-marker-alt' : 'fas fa-exclamation-triangle';
             
             html += `
                 <div class="${itemClass}">
@@ -3898,18 +3655,6 @@
             return;
         }
 
-        if (metode === 'Foto' && faceVerificationResult !== null) {
-            if (!faceVerificationResult.match) {
-                alert('❌ ABSEN DITOLAK!\n\nWajah tidak cocok dengan data di database.\n\nSilakan:\n1. Pastikan siswa sudah terdaftar di database\n2. Upload foto siswa di menu Database Siswa\n3. Coba ambil foto dengan pencahayaan yang lebih baik');
-                return;
-            }
-        }
-
-        if (metode === 'Foto' && faceVerificationResult === null && isFaceModelLoaded) {
-            alert('Silakan ambil foto terlebih dahulu untuk verifikasi wajah.');
-            return;
-        }
-
         const today = new Date().toLocaleDateString('id-ID', {
             day: '2-digit', month: '2-digit', year: 'numeric'
         });
@@ -3948,9 +3693,6 @@
             notificationMessage = 'melakukan absen tanpa data lokasi (GPS tidak aktif).';
         }
 
-        const faceVerified = faceVerificationResult ? faceVerificationResult.match : false;
-        const faceStatus = faceVerified ? 'Wajah Cocok' : 'Tidak Diverifikasi';
-
         const newRecord = {
             id: now,
             nama: nama,
@@ -3967,8 +3709,6 @@
                 distance: locationResult.distance
             } : null,
             metode: metode,
-            faceVerified: faceVerified,
-            faceStatus: faceStatus,
             lastVerified: now
         };
 
@@ -4001,8 +3741,6 @@
             capturedImg.src = '';
             photoStatus.textContent = 'Foto berhasil disimpan ✅';
             photoStatus.style.color = '#1f9d5a';
-            faceResult.style.display = 'none';
-            faceVerificationResult = null;
             absenBtn.disabled = false;
             refreshCamera();
         }
@@ -4115,7 +3853,7 @@
             alert('Tidak ada data untuk diexport.');
             return;
         }
-        let csv = 'No,Nama,Kelas,Tanggal,Jam,Metode,Lokasi,Status,Verifikasi Wajah\n';
+        let csv = 'No,Nama,Kelas,Tanggal,Jam,Metode,Lokasi,Status\n';
         absensiData.forEach((item, idx) => {
             const row = [
                 idx + 1,
@@ -4125,8 +3863,7 @@
                 `"${item.jam || item.waktu?.split(',')[1]?.trim() || '-'}"`,
                 `"${item.metode || 'Foto'}"`,
                 `"${item.lokasiNama || item.lokasiStatus || 'Tidak Diketahui'}"`,
-                `"${item.status}"`,
-                `"${item.faceVerified ? '✅ Cocok' : '❌ Tidak Diverifikasi'}"`
+                `"${item.status}"`
             ];
             csv += row.join(',') + '\n';
         });
@@ -4148,16 +3885,6 @@
         loadData();
         startCamera();
         setScanMode('auto');
-        
-        setTimeout(() => {
-            loadFaceModels().then(loaded => {
-                if (loaded) {
-                    console.log('Face models loaded successfully');
-                } else {
-                    console.warn('Face models failed to load');
-                }
-            });
-        }, 2000);
     })();
 </script>
 

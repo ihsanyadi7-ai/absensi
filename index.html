@@ -10,15 +10,16 @@
     <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.0/umd/index.min.js"></script>
     <!-- jsBarcode Library -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-    <!-- SheetJS untuk import Excel -->
+    <!-- SheetJS untuk import/export Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- html2canvas untuk screenshot barcode -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <!-- jsPDF untuk export PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- face-api.js untuk deteksi wajah -->
-    <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <style>
+        /* ============================================================
+           STYLE UTAMA (Sama seperti sebelumnya, ditambahkan style untuk template)
+           ============================================================ */
         * {
             margin: 0;
             padding: 0;
@@ -348,7 +349,6 @@
             cursor: not-allowed;
         }
 
-        /* Face Result */
         .face-result {
             margin-top: 12px;
             padding: 12px 16px;
@@ -861,11 +861,18 @@
             background: #fef0f0;
             border-left-color: #d14c4c;
         }
+        .notification-item.wajah-tidak-dikenal {
+            background: #fef0f0;
+            border-left-color: #d14c4c;
+        }
         .notification-item .notif-icon {
             color: #e6a020;
             font-size: 1.1rem;
         }
         .notification-item.lokasi-salah .notif-icon {
+            color: #d14c4c;
+        }
+        .notification-item.wajah-tidak-dikenal .notif-icon {
             color: #d14c4c;
         }
         .notification-item .notif-text {
@@ -1430,6 +1437,9 @@
             <button class="btn btn-success" onclick="exportCSV()">
                 <i class="fas fa-file-csv"></i> Export CSV
             </button>
+            <button class="btn btn-info" onclick="downloadTemplateExcel()">
+                <i class="fas fa-file-excel"></i> Download Template
+            </button>
         </div>
     </div>
 
@@ -1451,7 +1461,7 @@
         <button class="tab-btn" data-tab="tabRiwayat"><i class="fas fa-history"></i> Riwayat</button>
     </div>
 
-    <!-- Tab 1: Absen dengan Deteksi Wajah Auto Fill -->
+    <!-- Tab 1: Absen -->
     <div id="tabAbsen" class="tab-content active">
         <div class="camera-section">
             <div class="camera-wrapper">
@@ -1501,7 +1511,6 @@
                         <span id="photoStatus" style="font-size:0.85rem; color:#4b6e92;">Belum ada foto</span>
                     </div>
 
-                    <!-- Face Detection Result -->
                     <div class="face-result" id="faceResult">
                         <span class="face-icon" id="faceIcon"><i class="fas fa-user-check"></i></span>
                         <div class="face-content">
@@ -1697,6 +1706,9 @@
                 <button class="btn btn-info" onclick="showImportModal()">
                     <i class="fas fa-file-import"></i> Import Excel
                 </button>
+                <button class="btn btn-cyan" onclick="downloadTemplateExcel()">
+                    <i class="fas fa-download"></i> Template Excel
+                </button>
                 <button class="btn btn-success" onclick="importSiswaDefault()">
                     <i class="fas fa-download"></i> Default
                 </button>
@@ -1788,6 +1800,9 @@
         <h3><i class="fas fa-file-import" style="color: #17a2b8;"></i> Import Data Siswa dari Excel</h3>
         <p style="font-size: 0.9rem; color: #526b8a;">
             Upload file Excel (.xlsx, .xls, .csv) dengan format kolom: <strong>Nama</strong>, <strong>Kelas</strong>, <strong>NIS</strong>
+        </p>
+        <p style="font-size: 0.8rem; color: #e6a020; margin-top: 4px;">
+            <i class="fas fa-info-circle"></i> Klik tombol <strong>"Template Excel"</strong> di Database Siswa untuk download template.
         </p>
         
         <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
@@ -1898,7 +1913,6 @@
     const kelasSelect = document.getElementById('kelasSiswa');
     const absenBtn = document.getElementById('absenBtn');
 
-    // Face detection elements
     const faceResult = document.getElementById('faceResult');
     const faceIcon = document.getElementById('faceIcon');
     const faceText = document.getElementById('faceText');
@@ -2068,8 +2082,6 @@
         photoStatus.textContent = 'Foto berhasil diambil, memverifikasi wajah...';
         photoStatus.style.color = '#e6a020';
         absenBtn.disabled = true;
-        
-        // Verifikasi wajah
         verifyFace(capturedPhotoData);
     }
 
@@ -2088,7 +2100,7 @@
     refreshCamBtn.addEventListener('click', refreshCamera);
 
     // ==============================================================
-    // FACE DETECTION & VERIFICATION - AUTO FILL
+    // FACE DETECTION & VERIFICATION
     // ==============================================================
     async function loadFaceModels() {
         try {
@@ -2162,7 +2174,6 @@
             const matchedStudent = await findMatchingFace(detections[0].descriptor);
 
             if (matchedStudent) {
-                // AUTO FILL NAMA DAN KELAS
                 faceResult.className = 'face-result match';
                 faceIcon.innerHTML = '<i class="fas fa-user-check"></i>';
                 faceText.textContent = `✅ WAJAH COCOK: ${matchedStudent.nama}`;
@@ -2172,7 +2183,6 @@
                 photoStatus.textContent = `✅ Wajah cocok: ${matchedStudent.nama}`;
                 photoStatus.style.color = '#1f9d5a';
                 
-                // AUTO FILL FORM
                 namaInput.value = matchedStudent.nama;
                 const options = kelasSelect.options;
                 for (let i = 0; i < options.length; i++) {
@@ -2182,7 +2192,6 @@
                     }
                 }
                 
-                // Alert notifikasi
                 setTimeout(() => {
                     alert(`✅ Verifikasi wajah berhasil!\n\nNama: ${matchedStudent.nama}\nKelas: ${matchedStudent.kelas}\n\nKlik "Absen Sekarang" untuk melanjutkan.`);
                 }, 300);
@@ -2197,7 +2206,6 @@
                 photoStatus.textContent = '❌ Orang tidak dikenali';
                 photoStatus.style.color = '#d14c4c';
                 
-                // Notifikasi
                 const today = new Date().toLocaleDateString('id-ID', {
                     day: '2-digit', month: '2-digit', year: 'numeric'
                 });
@@ -2840,6 +2848,56 @@
 
     function closeFotoPreview() {
         document.getElementById('fotoPreviewModal').classList.remove('active');
+    }
+
+    // ==============================================================
+    // DOWNLOAD TEMPLATE EXCEL
+    // ==============================================================
+    function downloadTemplateExcel() {
+        // Buat workbook baru
+        const wb = XLSX.utils.book_new();
+        
+        // Data template dengan contoh
+        const data = [
+            ['Nama', 'Kelas', 'NIS'],
+            ['Ahmad Fauzi', 'X FASE E1', 'TIK-001'],
+            ['Budi Santoso', 'X FASE E2', 'TIK-002'],
+            ['Citra Dewi', 'X FASE E3', 'TIK-003'],
+            ['', '', ''],
+            ['', '', ''],
+            ['', '', ''],
+            ['', '', ''],
+            ['', '', ''],
+            ['', '', ''],
+        ];
+        
+        // Buat worksheet
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        
+        // Set lebar kolom
+        ws['!cols'] = [
+            { wch: 25 },  // Nama
+            { wch: 20 },  // Kelas
+            { wch: 15 }   // NIS
+        ];
+        
+        // Tambahkan worksheet ke workbook
+        XLSX.utils.book_append_sheet(wb, ws, 'Siswa');
+        
+        // Generate file Excel
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        
+        // Download file
+        const blob = new Blob([wbout], { type: 'application/octet-stream' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'template_siswa_tikom.xlsx';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+        
+        alert('✅ Template Excel berhasil didownload!\n\nFormat kolom:\n- Nama (wajib)\n- Kelas (opsional)\n- NIS (opsional)');
     }
 
     // ==============================================================
@@ -3529,41 +3587,37 @@
     // ==============================================================
     function loadDefaultSiswa() {
         siswaData = [
-           { id: 1, nama: 'Ardini pani', kelas: 'XI B1', nis: 'TIK-001', foto: null },
-            { id: 2, nama: 'Annisa Meuthia Maulina', kelas: 'XII B1', nis: 'TIK-002', foto: null },
-            { id: 3, nama: 'Anmniatun Naqiah', kelas: 'XII B1', nis: 'TIK-003', foto: null },
-            { id: 4, nama: 'Amelia Harianti Putri', kelas: 'XII B2', nis: 'TIK-004', foto: null },
-            { id: 5, nama: 'Sohyuni', kelas: 'XI A1', nis: 'TIK-005', foto: null },
-            { id: 6, nama: 'Putri iliyin', kelas: 'XI A1', nis: 'TIK-006', foto: null },
-            { id: 7, nama: 'Anis Humaira Johan', kelas: 'XI A1', nis: 'TIK-007', foto: null },
-            { id: 8, nama: 'Siti Kulsum Salsabila', kelas: 'XI A1', nis: 'TIK-008', foto: null },
-            { id: 9, nama: 'Cahaya Septiani', kelas: 'XI B1', nis: 'TIK-009', foto: null },
-            { id: 10, nama: 'Rohmatul Izzah', kelas: 'XI A1', nis: 'TIK-010', foto: null },
-            { id: 11, nama: 'Dinda Febrianita', kelas: 'XI B2', nis: 'TIK-011', foto: null },
-            { id: 12, nama: 'Nur Aini', kelas: 'XII B1', nis: 'TIK-012', foto: null },
-            { id: 13, nama: 'Laelatul Fitriani', kelas: 'XI B1', nis: 'TIK-013', foto: null },
-            { id: 14, nama: 'Roziatul Amaliah', kelas: 'XI B1', nis: 'TIK-014', foto: null },
-            { id: 15, nama: 'Luluil Maknun', kelas: 'XI B2', nis: 'TIK-015', foto: null },
-            { id: 16, nama: 'Jenika Amalia', kelas: 'XI B2', nis: 'TIK-016', foto: null },
-            { id: 17, nama: 'Dina Aulia Rizki', kelas: 'XII B1', nis: 'TIK-017', foto: null },
-            { id: 18, nama: 'Muhammad Faizul Maulana', kelas: 'XI C1', nis: 'TIK-018', foto: null },
-            { id: 19, nama: 'Ahmad Qurniawan', kelas: 'XI B2', nis: 'TIK-019', foto: null },
-            { id: 20, nama: 'Muhammad Bahran Jaelani', kelas: 'XI A2', nis: 'TIK-020', foto: null },
-            { id: 21, nama: 'Muhammad masud Irawan', kelas: 'XI B2', nis: 'TIK-021', foto: null },
-            { id: 22, nama: 'Ahmad Sakbani', kelas: 'XI A2', nis: 'TIK-022', foto: null },
-            { id: 23, nama: 'Abdulloh Taqiudin Robbani', kelas: 'XI A1', nis: 'TIK-023', foto: null },
-            { id: 24, nama: 'Zulpa Azkia Ul-Husna', kelas: 'XII B1', nis: 'TIK-024', foto: null },
-            { id: 25, nama: 'Alifa Nuraziza', kelas: 'XII B1', nis: 'TIK-025', foto: null },
-            { id: 26, nama: 'Mala Daniati', kelas: 'XII AB1', nis: 'TIK-026', foto: null },
-            { id: 27, nama: 'Sriyani', kelas: 'XII B1', nis: 'TIK-027', foto: null },
-            { id: 28, nama: 'Amar Apandi', kelas: 'XI C1', nis: 'TIK-028', foto: null },
-            { id: 29, nama: 'Fatimatuzzahrah', kelas: 'XI A1', nis: 'TIK-029', foto : null },
-            { id: 30, nama: 'Zohriatam Musannif', kelas: 'XI C1', nis: 'TIK-030', foto: null },
-            { id: 31, nama: 'Wilda Azkia', kelas: 'XII A2', nis: 'TIK-031', foto: null },
-            { id: 32, nama: 'Rahmawati', kelas: 'XII B1', nis: 'TIK-032', foto: null },
-            { id: 33, nama: 'Muhammad ali al asyari', kelas: 'XI B1', nis: 'TIK-033', foto: null },
+            { id: 1, nama: 'Ahmad Fauzi', kelas: 'X FASE E1', nis: 'TIK-001', foto: null },
+            { id: 2, nama: 'Budi Santoso', kelas: 'X FASE E2', nis: 'TIK-002', foto: null },
+            { id: 3, nama: 'Citra Dewi', kelas: 'X FASE E3', nis: 'TIK-003', foto: null },
+            { id: 4, nama: 'Deni Pratama', kelas: 'X FASE E4', nis: 'TIK-004', foto: null },
+            { id: 5, nama: 'Eka Putri', kelas: 'X FASE E5', nis: 'TIK-005', foto: null },
+            { id: 6, nama: 'Farhan Hidayat', kelas: 'XI A1', nis: 'TIK-006', foto: null },
+            { id: 7, nama: 'Gita Permata', kelas: 'XI A2', nis: 'TIK-007', foto: null },
+            { id: 8, nama: 'Hendra Wijaya', kelas: 'XI B1', nis: 'TIK-008', foto: null },
+            { id: 9, nama: 'Indah Sari', kelas: 'XI B2', nis: 'TIK-009', foto: null },
+            { id: 10, nama: 'Joko Susilo', kelas: 'XI C1', nis: 'TIK-010', foto: null },
+            { id: 11, nama: 'Kartika Dewi', kelas: 'XII A1', nis: 'TIK-011', foto: null },
+            { id: 12, nama: 'Lukman Hakim', kelas: 'XII A2', nis: 'TIK-012', foto: null },
+            { id: 13, nama: 'Maya Sari', kelas: 'XII B1', nis: 'TIK-013', foto: null },
+            { id: 14, nama: 'Nugroho', kelas: 'XII B2', nis: 'TIK-014', foto: null },
+            { id: 15, nama: 'Oktavia', kelas: 'XII C1', nis: 'TIK-015', foto: null },
+            { id: 16, nama: 'Putri Amelia', kelas: 'X FASE E1', nis: 'TIK-016', foto: null },
+            { id: 17, nama: 'Rizky Ramadhan', kelas: 'X FASE E2', nis: 'TIK-017', foto: null },
+            { id: 18, nama: 'Siti Rahma', kelas: 'X FASE E3', nis: 'TIK-018', foto: null },
+            { id: 19, nama: 'Taufik Hidayat', kelas: 'X FASE E4', nis: 'TIK-019', foto: null },
+            { id: 20, nama: 'Umi Kalsum', kelas: 'X FASE E5', nis: 'TIK-020', foto: null },
+            { id: 21, nama: 'Vina Aprilia', kelas: 'XI A1', nis: 'TIK-021', foto: null },
+            { id: 22, nama: 'Wahyu Setiawan', kelas: 'XI A2', nis: 'TIK-022', foto: null },
+            { id: 23, nama: 'Xavier Putra', kelas: 'XI B1', nis: 'TIK-023', foto: null },
+            { id: 24, nama: 'Yuni Astuti', kelas: 'XI B2', nis: 'TIK-024', foto: null },
+            { id: 25, nama: 'Zainal Abidin', kelas: 'XI C1', nis: 'TIK-025', foto: null },
+            { id: 26, nama: 'Agus Salim', kelas: 'XII A1', nis: 'TIK-026', foto: null },
+            { id: 27, nama: 'Bella Safira', kelas: 'XII A2', nis: 'TIK-027', foto: null },
+            { id: 28, nama: 'Cahyo Nugroho', kelas: 'XII B1', nis: 'TIK-028', foto: null },
+            { id: 29, nama: 'Dinda Ayu', kelas: 'XII B2', nis: 'TIK-029', foto: null },
+            { id: 30, nama: 'Eko Prasetyo', kelas: 'XII C1', nis: 'TIK-030', foto: null },
         ];
-
         saveData();
     }
 

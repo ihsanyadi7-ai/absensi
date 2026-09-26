@@ -18,6 +18,39 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- face-api.js untuk deteksi wajah -->
     <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Absensi Ekskul Komputer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+
+    <!-- ============================================================
+         LIBRARY ZXING UNTUK SCAN BARCODE
+         ============================================================
+         PENTING: Gunakan @zxing/browser versi UMD yang sudah
+         dibundle lengkap. JANGAN gunakan `import ... from '@zxing/browser'`
+         karena tidak akan jalan di browser biasa.
+         
+         Pakai: ZXing.BrowserMultiFormatReader (dari global ZXing)
+         ============================================================ -->
+    
+    <!-- 1. ZXing Core (WAJIB - untuk decoding) -->
+    <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
+    
+    <!-- 2. ZXing Browser (WAJIB - untuk akses kamera & video) -->
+    <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/index.min.js"></script>
+    
+    <!-- 3. Library pendukung lain -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <!-- Style Anda (tidak perlu diubah) -->
+    <style>
+        /* ... style tetap sama ... */
+    </style>
+</head>
     <style>
         * {
             margin: 0;
